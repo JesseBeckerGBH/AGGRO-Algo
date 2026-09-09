@@ -15,7 +15,7 @@ from pathlib import Path
 import yaml
 
 from . import briefing as briefing_mod
-from . import canonical, classify, planning, rerank
+from . import canonical, classify, llm, planning, rerank
 from .connectors import get_connector
 from .models import Briefing, Mission, Result
 from .memory import Memory
@@ -44,6 +44,9 @@ def run_mission(
     limit: int = 10,
     top: int = 6,
     db_path: str | Path = "research-memory.sqlite",
+    brief_mode: str = "render",  # render | llm | auto
+    llm_provider: str | None = None,
+    llm_model: str | None = None,
 ) -> RunOutput:
     now = datetime.now(timezone.utc).isoformat(timespec="seconds")
     conn = get_connector(connector)
@@ -75,9 +78,18 @@ def run_mission(
         mem.mark_novelty(mission.id, deduped)
         ordered = rerank.rerank(deduped, mission)
 
-        brief = briefing_mod.render(
-            mission, ordered, top=top, retrieved=retrieved, generated_at=now
-        )
+        mode = brief_mode
+        if mode == "auto":
+            mode = "llm" if llm.available_provider() else "render"
+        if mode == "llm":
+            brief = briefing_mod.synthesize(
+                mission, ordered, top=top, retrieved=retrieved, generated_at=now,
+                provider=llm_provider, model=llm_model,
+            )
+        else:
+            brief = briefing_mod.render(
+                mission, ordered, top=top, retrieved=retrieved, generated_at=now
+            )
 
         # persist the deduped+scored set and the briefing
         by_qid: dict[int, list[Result]] = {}

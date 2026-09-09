@@ -9,6 +9,7 @@ from __future__ import annotations
 import argparse
 import sys
 
+from .llm import LLMError, LLMKeyMissing
 from .pipeline import load_mission, run_mission
 
 for _stream in (sys.stdout, sys.stderr):
@@ -20,13 +21,24 @@ for _stream in (sys.stdout, sys.stderr):
 
 def _cmd_run(args: argparse.Namespace) -> int:
     mission = load_mission(args.mission)
-    out = run_mission(
-        mission,
-        connector=args.connector,
-        limit=args.limit,
-        top=args.top,
-        db_path=args.db,
-    )
+    try:
+        out = run_mission(
+            mission,
+            connector=args.connector,
+            limit=args.limit,
+            top=args.top,
+            db_path=args.db,
+            brief_mode=args.brief,
+            llm_provider=args.llm_provider,
+            llm_model=args.llm_model,
+        )
+    except LLMKeyMissing as e:
+        print(f"error: {e}\nhint: cp .env.example .env and add a key, or use "
+              f"--brief render / --brief auto", file=sys.stderr)
+        return 2
+    except LLMError as e:
+        print(f"error: LLM synthesis failed: {e}", file=sys.stderr)
+        return 2
     print(out.briefing.body)
     print()
     print(f"[{out.mission.id}] {out.retrieved} retrieved -> "
@@ -45,6 +57,12 @@ def build_parser() -> argparse.ArgumentParser:
     run.add_argument("--limit", type=int, default=10, help="results per query")
     run.add_argument("--top", type=int, default=6, help="results surfaced in the briefing")
     run.add_argument("--db", default="research-memory.sqlite", help="SQLite memory path")
+    run.add_argument("--brief", choices=("render", "llm", "auto"), default="render",
+                     help="render = deterministic (default); llm = LLM synthesis; "
+                          "auto = llm if a key is configured, else render")
+    run.add_argument("--llm-provider", default=None,
+                     help="gemini | anthropic | openai (else $LLM_PROVIDER, else gemini)")
+    run.add_argument("--llm-model", default=None, help="override the provider default model")
     run.set_defaults(func=_cmd_run)
     return p
 

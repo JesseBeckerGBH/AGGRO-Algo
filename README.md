@@ -61,5 +61,6 @@ python -m venv .venv && .venv/Scripts/pip install -e ".[dev]"
 python -m research_os run --mission missions/example-tennis-features.yaml
 ```
 
-Not yet: LLM briefing synthesis, live-search validation, multi-connector,
-scheduler, adaptation loop.
+Briefing synthesis is provider-agnostic (`--brief llm`, Gemini / Anthropic /
+OpenAI); add a key to `.env` to use it. Not yet: live-search validation,
+multi-connector, scheduler, adaptation loop.

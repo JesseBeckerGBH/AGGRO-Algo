@@ -13,31 +13,17 @@ import urllib.error
 import urllib.parse
 import urllib.request
 
+from ..env import load_dotenv
 from ..models import Result
 
 _ENDPOINT = "https://api.search.brave.com/res/v1/web/search"
-
-
-def _load_dotenv() -> None:
-    if os.environ.get("BRAVE_SEARCH_API_KEY"):
-        return
-    for candidate in (".env", os.path.expanduser("~/.env")):
-        if os.path.isfile(candidate):
-            with open(candidate, "r", encoding="utf-8") as fh:
-                for line in fh:
-                    line = line.strip()
-                    if not line or line.startswith("#") or "=" not in line:
-                        continue
-                    k, _, v = line.partition("=")
-                    os.environ.setdefault(k.strip(), v.strip().strip('"').strip("'"))
-            break
 
 
 class BraveConnector:
     name = "brave"
 
     def __init__(self, *, max_retries: int = 3, backoff: float = 1.5):
-        _load_dotenv()
+        load_dotenv()
         self.api_key = os.environ.get("BRAVE_SEARCH_API_KEY", "")
         self.max_retries = max_retries
         self.backoff = backoff

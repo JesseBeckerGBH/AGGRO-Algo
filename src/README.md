@@ -23,18 +23,28 @@ python -m venv .venv && .venv/Scripts/pip install -e ".[dev]"      # Windows
 # python3 -m venv .venv && .venv/bin/pip install -e ".[dev]"       # POSIX
 
 python -m research_os run --mission missions/example-tennis-features.yaml
+python -m research_os run --mission missions/example-tennis-features.yaml --brief auto
 pytest -q
 ```
 
-No keys needed — the default `fixture` connector ships a canned corpus.
-For live search: `cp .env.example .env`, add `BRAVE_SEARCH_API_KEY`, then
-`--connector brave`.
+No keys needed for the default run — the `fixture` connector ships a canned
+corpus and `--brief render` is deterministic. To go live: `cp .env.example .env`,
+then add `BRAVE_SEARCH_API_KEY` (`--connector brave`) and/or an LLM key
+(`--brief llm`). `--brief auto` uses the LLM if a key is present, else render.
+
+## Briefing modes
+
+| `--brief` | Behaviour |
+|---|---|
+| `render` (default) | Deterministic: arranges + labels sources into the briefing-agent.md structure. No key. |
+| `llm` | LLM writes the 250–400 word narrative over the reranked set, obeying briefing-agent.md. Needs a key; footer counts still appended mechanically. |
+| `auto` | `llm` if any provider key is configured, else `render`. |
+
+Providers (`llm.py`, picked by `LLM_PROVIDER`, default `gemini`): `gemini`,
+`anthropic`, `openai` — each a stdlib REST call, no extra dependency.
 
 ## Deliberately stubbed (not this stage)
 
-- **Briefing synthesis** — `briefing.render()` arranges and labels sources; it
-  does not write the 250–400 word narrative. That is an LLM call
-  (`briefing.synthesize()`, raises `NotImplementedError`) and is the next step.
 - **Content-inspection classifier signals** — citation density, originality,
   ad density, correction history need fetched page bodies; the slice classifies
   from URL + snippet only.
@@ -54,6 +64,8 @@ For live search: `cp .env.example .env`, add `BRAVE_SEARCH_API_KEY`, then
 | `classify.py` | source-class assignment |
 | `rerank.py` | the governing rule: class before relevance |
 | `memory.py` | SQLite persistence + novelty |
-| `briefing.py` | render (deterministic) + `synthesize()` seam |
+| `briefing.py` | `render()` (deterministic) + `synthesize()` (LLM) |
+| `llm.py` | provider-agnostic `synthesize()` — gemini / anthropic / openai |
+| `env.py` | `.env` loader (no dependency) |
 | `pipeline.py` | wires it together; `run_mission()` |
 | `__main__.py` | `research-os run …` CLI |
