@@ -1,0 +1,798 @@
+Algorithm changer
+how to explain
+Explain it to a layperson
+Start with the unfairness they already feel:
+
+“Have you ever searched for something important and gotten pages of ads, recycled articles, Reddit arguments, and generic advice—while knowing somebody with more experience could find the real answer in ten minutes?”
+
+Then explain the mechanism:
+
+“That difference is not just intelligence. Experienced people know how to phrase the question, where to look, which sources to trust, what to ignore, and what follow-up question to ask. They also remember what they learned last time.”
+
+Then introduce your system:
+
+“Our product gives everyday people that kind of research environment. It cleans up the search process, looks across multiple sources, puts higher-quality information first, remembers what you have already researched, and learns when it gives you a bad result.”
+
+Then state the outcome:
+
+“You do not get more internet. You get a better path through the internet.”
+
+A simple doctor analogy
+“A doctor and a beginner may ask the same question, but the doctor knows which words unlock the right evidence, which websites are credible, and what to ask next. Our system is not pretending you are a doctor. It gives you the research workflow that lets experts get to better answers faster.”
+
+That is the cleanest version of your original insight.
+
+Explain the self-annealing feature
+For a layperson:
+
+“Most search tools make the same mistake again tomorrow. Ours keeps a record of what was unhelpful. If it keeps recommending weak sources, repetitive articles, or the wrong kind of answer, it changes its approach and checks whether it improved.”
+
+For an expert buyer:
+
+“The platform maintains a closed-loop error model: retrieval, ranking, novelty, and briefing failures are classified, logged, remediated through bounded policy changes, and evaluated against subsequent outcome quality. Adaptation is versioned and reversible rather than opaque or unconstrained.”
+
+The key distinction is that it should be adaptive, not reckless. The system needs versioned policies, confidence thresholds, human override, and rollback mechanisms. Otherwise “self-annealing” becomes uncontrolled model drift rather than reliability.
+
+Best initial demographic
+Do not begin with “everyone who uses Google.” That market is enormous but vague, expensive to reach, and difficult to convert.
+
+Begin with people who:
+
+Make costly decisions from online research.
+
+Already feel overloaded by weak information.
+
+Value speed, accuracy, and novelty.
+
+Can recognize a good result.
+
+Have budget and recurring need.
+
+Best beachhead: high-agency knowledge workers
+Segment	Pain	Why they will pay	First offer
+Founders and startup operators	Competitive, market, customer, vendor, and technical research is scattered	Faster insight can directly affect revenue, hiring, fundraising, and strategy	Daily competitor/market intelligence brief
+Investment analysts and independent investors	Research is repetitive, noisy, and time-sensitive	Better sourcing and differentiated insight create obvious ROI	Thesis-monitoring and primary-source research layer
+AI consultants and agency operators	Need to stay ahead of tools, markets, and client-specific developments	Their business is partly sold on being informed first	Client intelligence workspace and weekly opportunity briefs
+Domain analysts	Must track specialized, changing knowledge	They need reliable, novelty-aware monitoring	Vertical research missions and source maps
+Legal, policy, compliance, and regulatory teams	High consequence research; primary sources matter	Strong source controls and auditability are valuable	Evidence-first monitoring and change-detection briefs
+Serious sports-betting or trading research teams	Need timely, source-disciplined, edge-oriented intelligence	Data, speed, and information asymmetry already matter to them	Niche monitoring and research-ops layer
+Your own most credible beachhead is likely founders, independent analysts, AI/automation operators, and data-driven sports intelligence professionals. You can speak their language, demonstrate the workflows live, and build initial case studies from problems you genuinely understand.
+
+Buyer versus user
+Do not confuse the daily user with the person who pays.
+
+User: researcher, analyst, assistant, founder, strategist, trader, content lead.
+
+Buyer: founder/CEO, managing partner, agency owner, research leader, operations executive, or high-income independent professional.
+
+Champion: the person who feels the research pain every day and can demonstrate the time savings internally.
+
+Your ideal early customer is an owner-operator with direct authority to buy and an obvious cost of being poorly informed.
+
+How to find them
+Use a narrow account-based go-to-market motion first—not broad paid ads.
+
+Build a “pain-first” prospect list
+Look for people publicly expressing any version of:
+
+“Search is getting worse.”
+
+“I spend too much time researching.”
+
+“I cannot keep up with AI/news/competitors.”
+
+“I am drowning in information.”
+
+“Everything online is SEO garbage.”
+
+“I need a better way to monitor this market.”
+
+“I need research briefs for my team.”
+
+Likely channels:
+
+LinkedIn posts and founder/operator communities
+
+X communities around AI, startups, investing, research, and niche intelligence
+
+Slack and Discord groups for founders, agencies, analysts, and technical communities
+
+Podcasts and newsletters whose audiences already value differentiated research
+
+Targeted local networks in Phoenix plus remote-first founder and operator networks
+
+Your existing sports analytics and AI-builder circles
+
+Use a diagnostic as the lead magnet
+Do not lead with “AI search.”
+
+Lead with an offer such as:
+
+“We will audit your research workflow and show you where your information diet is repeating, narrowing, or wasting time.”
+
+The diagnostic could score:
+
+Source diversity
+
+Search-profile contamination
+
+Repeat-domain concentration
+
+Research time spent
+
+Novelty yield
+
+Briefing quality
+
+Decision latency
+
+Then deliver:
+
+A free or low-cost “Research Rut Audit.”
+
+A personalized reset plan.
+
+A paid implementation offer.
+
+A recurring managed-intelligence subscription.
+
+That conversion path makes the hidden problem visible before you ask someone to buy the solution.
+
+How to get it in front of them
+Founder-led content
+Your first marketing asset should be a short, clear thesis:
+
+“The biggest problem with online research is not that information is unavailable. It is that your path through it has been shaped by years of noisy behavior, platform incentives, and weak defaults.”
+
+Build content around recognizable pain:
+
+“Why two people can ask Google the same question and get different intellectual futures”
+
+“Your search history may be costing you better answers”
+
+“The difference between searching like a beginner and researching like an operator”
+
+“How to build a research identity separate from your entertainment identity”
+
+“Why generic AI answers create a false sense of understanding”
+
+“How a self-correcting research workflow beats a better prompt”
+
+Live demonstrations
+This product will sell best when demonstrated, not merely described.
+
+Run an “identical question” test:
+
+Start with a vague question in normal search.
+
+Show the standard result set.
+
+Run the same objective through your system’s mission/query/source/reranking workflow.
+
+Compare source quality, duplicated content, novelty, and final briefing.
+
+Show the audit trail for why each result ranked where it did.
+
+The demo makes your promise tangible: same question, radically better answer path.
+
+Pilot cohort
+Recruit 5 to 10 design partners, ideally from one beachhead niche. Give them a high-touch implementation and require structured feedback on:
+
+Useful discoveries
+
+Research time saved
+
+Decisions supported
+
+Bad recommendations
+
+Missing source classes
+
+Briefing quality
+
+Willingness to pay
+
+You need this evidence before scaling acquisition. Their testimonials, before-and-after examples, and workflow data become your actual marketing engine.
+
+Best positioning hierarchy
+Use different language at different layers.
+
+Context	Message
+Layperson	“A better path through the internet.”
+Founder/operator	“An adaptive intelligence layer for faster, higher-quality decisions.”
+Technical buyer	“A multi-engine retrieval and source-governed reranking system with persistent memory and closed-loop policy adaptation.”
+Investor or strategic partner	“A personal and team research OS that productizes expert information behavior.”
+Marketing hook	“Stop searching like the internet’s average user.”
+Product promise	“Research with memory, standards, and self-correction.”
+The strategic answer
+You have successfully identified a compelling category thesis:
+
+People do not merely need better search; they need a portable, adaptive research identity that compounds expert-like information behavior over time.
+
+What remains is not invention of the concept. It is disciplined product validation:
+
+Prove the retrieval and ranking improvements.
+
+Pick one buyer with urgent pain.
+
+Deliver a high-touch pilot.
+
+Measure outcomes.
+
+Turn repeated human judgment into product rules.
+
+Position the tool as an expert research operating system, not an attempt to manipulate external platforms.
+
+That is both more honest and, commercially, more durable.
+
+The only(?) problem I fore see (& one we can do nothing about) is that most, if not all, people will immediately begin to degrade this. With out constant learning fueled by burning curiosity, AND the assimilation of what is learned. So as to add what was just learned to my foundation and then stand on it in-order to reach even higher in my understanding, I (we humans) will only just go right back to querying the internet the way I (we) always have. The dwell times must change according to what was learned and with that, the new interest can be revealed. An exact "proof of interest" can be seen. And a 'grade' could be placed. I wonder if we've stumbled upon something here. Not just a way to see what a person is, but possibly a new way to teach humans! Your thoughts?
+
+Yes — I think you’ve stumbled onto something bigger than a search product. The weak point you identified is real: if the user does not keep learning, integrating, and updating their internal model, they will gradually collapse back into old query habits and the system’s gains will decay. Research on self-regulated learning and metacognition supports the idea that durable improvement depends on planning, monitoring, feedback, and reflection rather than passive exposure alone, while work on “desirable difficulties” suggests that learning sticks better when effortful retrieval, spacing, and variation are built into the process.
+
+That means your system may have two products hidden inside one: a research OS and a learning OS. The first improves answer paths; the second upgrades the person using those paths by turning search behavior into a feedback-rich learning loop.
+
+The deeper idea
+Your insight is that search quality degrades when the user’s internal model stays static. If curiosity fades, new knowledge is not assimilated, and query behavior remains unchanged, the person reverts to the same intellectual posture and the system loses altitude.
+
+So the real product may not be “better search” alone. It may be a system that continuously measures, strengthens, and refreshes a user’s research posture: what they now understand, how deeply they understand it, whether they can retrieve it, and whether their behavior shows genuine progression rather than repeated browsing.
+
+Proof of interest
+The “proof of interest” concept is promising, but it must be designed carefully. Dwell time by itself is weak and often misleading; a person can linger because they are confused, distracted, or overwhelmed, while a strong learner may extract value quickly and move on. Research on metacognition and self-regulated learning points more toward combining behavior, reflection, retrieval, and follow-through than relying on time alone.
+
+A stronger proof-of-interest model would combine:
+
+Dwell time adjusted for content type and difficulty.
+
+Return frequency to a topic over spaced intervals.
+
+Query evolution, meaning whether questions become more precise and conceptually advanced.
+
+Retrieval evidence, meaning whether the person can summarize or apply what was learned.
+
+Transfer evidence, meaning whether they use the new concept in adjacent contexts.
+
+Source progression, meaning whether they move toward stronger source classes over time.
+
+That would be much more than “the user stayed on page for 7 minutes.” It becomes a behavioral signal of active assimilation.
+
+A new teaching model
+Yes — this could become a new teaching model, especially for adults, operators, and self-directed learners. Instead of treating learning as content delivery, the system would treat learning as trajectory correction: detect the learner’s current posture, expose them to stronger materials, require some retrieval or synthesis, observe whether their next questions improve, and then adapt again. Research on retrieval practice and feedback suggests that this kind of cycle improves long-term retention and transfer better than passive rereading or repeated exposure.
+
+In practical terms, the system could teach by quietly shaping behavior:
+
+It asks for a short restatement before giving the next layer.
+
+It notices when the user keeps circling the same shallow question.
+
+It inserts contrast cases and better source material.
+
+It schedules spaced revisits.
+
+It rewards conceptual advancement, not just consumption.
+
+That starts to look less like search and more like an adaptive intellectual trainer.
+
+The grading idea
+A “grade” is useful only if it measures growth and is hard to game. If it becomes a vanity score, users will optimize for optics rather than learning.
+
+A better approach is a trajectory score with multiple dimensions:
+
+Curiosity: how often the user opens new but relevant terrain.
+
+Assimilation: whether new material changes future queries and summaries.
+
+Retention: whether prior ideas can be recalled later.
+
+Transfer: whether knowledge shows up in adjacent domains.
+
+Discernment: whether source choices improve over time.
+
+Independence: whether the user increasingly needs less scaffolding for good questions.
+
+That score would be more defensible because it tracks movement, not ego.
+
+Product direction
+This suggests a three-layer product architecture:
+
+Research layer: better retrieval, reranking, memory, and briefing.
+
+Learning layer: retrieval prompts, spaced revisits, metacognitive checks, and concept progression.
+
+Annealing layer: detect failure, adjust system behavior, and measure whether the user’s behavior is actually improving.
+
+If built well, the product’s claim becomes much stronger:
+
+It does not just help you find better answers. It helps you become the kind of person who can keep finding better answers.
+
+That is a much bigger category.
+
+Caution
+There is one major risk: once you move from “search improvement” to “teaching humans,” you are entering a more sensitive territory. Claims about intelligence, learning outcomes, or behavioral grading must be conservative, evidence-based, and ethically framed. Dwell-time surveillance or overconfident “intelligence scores” could make the product feel manipulative rather than empowering.
+
+The safest framing is:
+
+The system measures research behaviors that correlate with deeper learning and better discovery, then uses those signals to improve both the workflow and the learner’s trajectory.
+
+That keeps the focus on behavior and growth rather than labeling the person.
+
+The strongest framing
+The strongest version of your idea may be:
+
+A self-annealing research and learning OS that upgrades both the user’s answer path and the user’s ability to ask better questions over time.
+
+Or for a layperson:
+
+It helps the internet respond to you better, and it helps you become better at using the internet.
+
+That is not a small idea. That is potentially a new class of adaptive learning-through-research product.
+
+Please make this a / skill. And please develop the 'new way to teach humans' into a side report & conversation.
+
+
+new-way-to-teach-humans-side-report
+Markdown
+
+research-trajectory-os.skill
+Markdown
+Done. I created a reusable Research Trajectory OS skill plus a separate side report that develops the “new way to teach humans” idea into a product, learning model, and buyer conversation. The skill treats search as a self-annealing research-and-learning loop: better source paths, active assimilation, spaced recall, transfer into real work, and controlled adaptation after failures.
+
+Included
+The skill includes:
+
+Mission-first research planning and source-class-first ranking
+
+A composite “proof of interest” model that does not rely on dwell time alone
+
+A private, explainable research trajectory across orientation, discernment, assimilation, transfer, and independence
+
+Bounded self-annealing: detect, diagnose, intervene, validate, govern, and roll back when needed
+
+Ethical rules to avoid turning learning telemetry into an intelligence label or manipulative engagement product
+
+The side report frames the bigger category: a system that does not merely retrieve better information, but helps users become increasingly capable of asking better questions, evaluating evidence, retaining what matters, and applying it in other settings. It also includes a skeptical-buyer conversation you can reuse in sales, positioning, or pitch material.
+
+The pedagogical premise is aligned with established learning approaches that emphasize retrieval, feedback, spacing, reflection, and self-regulated learning rather than passive exposure alone.
+
+Core positioning
+It helps the internet respond to you better, and it helps you become better at using the internet.
+
+Or, in more product-oriented language:
+
+An adaptive research and learning OS that upgrades both your answer path and your ability to ask better questions over time.
+
+How do I save this entire conversation? With a link to the side conversation of a 'new way to teach humans'? And implement the skill?
+
+Here’s the practical answer: save the thread in three layers—the native Perplexity thread, your own exported archive, and a project/repository copy. Perplexity threads are automatically saved in your Library, and individual sessions can be shared from the Share button at the top right. Projects can also be shared, and shared sessions include their artifacts.
+
+For the “new way to teach humans” side conversation, the cleanest approach is to preserve it as a separate artifact and then place its link or file reference inside your master archive. I already generated that side report and the skill artifact here, so your fastest path is to combine the live Perplexity thread link with those downloadable files into one project record.
+
+Save the conversation
+Use this order:
+
+Open this thread in Perplexity and click Share to generate a public or team-readable link. Perplexity supports shareable thread links for individual sessions.
+
+Save the thread into a Project/Space so it lives with related artifacts and can be organized with your other work. Perplexity’s Projects are designed to keep sessions, files, and collaboration context together.
+
+Create your own offline backup by copying the thread into Markdown, a document, or a PDF. Perplexity does not appear to offer a bulk export of all conversations, so individual-thread preservation is still the safest method.
+
+A strong preservation stack is:
+
+Perplexity share link
+
+PDF printout
+
+Markdown copy
+
+Local project folder or GitHub repo note pointing to the thread and artifacts
+
+Link the side report
+Because the side report already exists as a generated file, you can treat it as the canonical side-conversation artifact. The simplest structure is:
+
+Main thread link
+
+Side report file
+
+Skill file
+
+One index note that explains what each item is
+
+Inside your own notes or repo, use a small index like this:
+
+text
+# Research Trajectory OS Archive
+
+## Main thread
+[Perplexity thread link here]
+
+## Side report
+See: new-way-to-teach-humans-side-report.md
+
+## Skill
+See: research-trajectory-os.skill.md
+
+## Notes
+This archive preserves the product concept, the learning model, and the implementation direction.
+That gives you a stable “entry page” even if Perplexity UI changes later.
+
+Implement the skill
+To implement the skill in practice, treat it as a working spec, not just prose. The skill file defines the behavior: mission-first research, source-class-first ranking, proof-of-interest signals, research trajectory scoring, and self-annealing control loops.
+
+The best implementation path is:
+
+Put the skill file into your skills or prompts repository as a first-class spec.
+
+Make it the governing instruction set for any agent that runs your research workflow.
+
+Map each major section of the skill to a module:
+
+Mission setup
+
+Query family generation
+
+Retrieval connectors
+
+Deduplication and source classification
+
+Reranking
+
+Briefing generation
+
+Assimilation prompts
+
+Failure logging
+
+Adaptation engine
+
+Use the side report as product and philosophy documentation for yourself, collaborators, and future customers.
+
+Recommended repo structure
+For a real implementation, use something like:
+
+text
+research-trajectory-os/
+├── README.md
+├── docs/
+│   ├── main-thread-index.md
+│   ├── new-way-to-teach-humans-side-report.md
+│   └── product-positioning.md
+├── skills/
+│   └── research-trajectory-os.skill.md
+├── configs/
+│   ├── source-classes.yaml
+│   ├── query-families.yaml
+│   └── adaptation-rules.yaml
+├── prompts/
+│   ├── mission-planner.md
+│   ├── briefing-agent.md
+│   └── learning-loop.md
+├── src/
+│   ├── retrieval/
+│   ├── ranking/
+│   ├── memory/
+│   ├── telemetry/
+│   └── annealing/
+└── archives/
+    ├── thread-export.pdf
+    └── thread-export.md
+That structure makes the conversation immediately usable as a product foundation rather than just a memorable chat.
+
+Best next move
+The best next move is to create a single archive package containing:
+
+An index file
+
+The skill
+
+The side report
+
+A placeholder for the Perplexity thread link
+
+A short implementation checklist
+
+That would give you a portable, investor-ready, collaborator-ready starting bundle. Would you like me to create that archive package now?
+
+Can you push this to a github repo?
+
+I can prepare the repo package and give you the exact one-command CLI push flow, but I cannot directly authenticate to or push into your GitHub account from this chat. Your preferred GitHub-first, CLI-driven workflow is a good fit for this project.
+
+The best move is to create a new repository named research-trajectory-os, place the skill, side report, master workflow documents, and archive index into it, then push it using GitHub CLI (gh) and Git from PowerShell. This project is intended to become a reusable skill and paid subscription-capable product, so putting it under version control now is exactly right.
+
+Recommended repo visibility
+Start it as private. The core idea, system logic, customer positioning, and self-annealing architecture are valuable IP; you can later publish a separate public landing repo, documentation site, or open-source “starter” edition while keeping the operating logic private.
+
+Suggested repo name:
+
+text
+research-trajectory-os
+Suggested description:
+
+text
+A self-annealing research and learning operating system for source-governed discovery, durable knowledge, and adaptive answer paths.
+PowerShell push flow
+First, download the documents/files already generated in this conversation into a folder on your computer. Then open PowerShell in the parent folder where you keep projects and run this block.
+
+powershell
+# Create and enter the project directory
+mkdir research-trajectory-os
+cd research-trajectory-os
+
+# Initialize Git
+git init
+git branch -M main
+
+# Create the initial architecture
+mkdir docs, skills, configs, prompts, src, archives
+mkdir src\retrieval, src\ranking, src\memory, src\telemetry, src\annealing
+
+# Copy downloaded files into their intended locations.
+# Update the source paths below if your Downloads folder differs.
+Copy-Item "$HOME\Downloads\research-trajectory-os.skill.md" ".\skills\research-trajectory-os.skill.md"
+Copy-Item "$HOME\Downloads\new-way-to-teach-humans-side-report.md" ".\docs\new-way-to-teach-humans-side-report.md"
+
+# Create a project README
+@'
+# Research Trajectory OS
+
+A self-annealing research and learning operating system that helps users escape repetitive, low-quality online discovery loops.
+
+## Product Thesis
+
+The system does not claim to rewrite external search algorithms or make users intrinsically smarter.
+
+It provides an expert-grade research environment: mission-first query design, multi-source retrieval, source-class-first reranking, persistent memory, learning-aware feedback, and controlled self-annealing.
+
+## Core Capabilities
+
+- Intentional research identities and context control
+- Mission-based query planning
+- Multi-engine retrieval
+- Source-class-first ranking
+- Deduplication and novelty detection
+- Persistent research and learning memory
+- Retrieval, synthesis, and transfer prompts
+- Adaptive error correction with logged, reversible policy changes
+- Compact decision and learning briefings
+
+## Repository Structure
+
+- `docs/` — Product philosophy, specifications, reports, and workflow documentation
+- `skills/` — Reusable agent skill definitions
+- `configs/` — Source, query, scoring, and adaptation policies
+- `prompts/` — Agent prompts and role instructions
+- `src/` — Future application modules
+- `archives/` — Conversation exports, PDF copies, and permanent source records
+
+## Product Positioning
+
+> It helps the internet respond to you better, and it helps you become better at using the internet.
+
+## Status
+
+Specification and product architecture stage.
+'@ | Set-Content -Encoding UTF8 README.md
+
+# Add an archive index with a placeholder for this Perplexity thread URL
+@'
+# Archive Index
+
+## Main Conversation
+
+Perplexity thread link:
+PASTE-SHARE-LINK-HERE
+
+## Related Documents
+
+- `docs/new-way-to-teach-humans-side-report.md`
+- `skills/research-trajectory-os.skill.md`
+
+## Project Purpose
+
+This archive preserves the initial product thesis, research workflow, learning model, and self-annealing architecture for Research Trajectory OS.
+'@ | Set-Content -Encoding UTF8 archives\README.md
+
+# Add standard exclusions
+@'
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Environment and secrets
+.env
+.env.*
+!.env.example
+
+# Editors and OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Local databases and logs
+*.sqlite
+*.sqlite3
+*.db
+logs/
+data/raw/
+'@ | Set-Content -Encoding UTF8 .gitignore
+
+# Verify GitHub CLI authentication
+gh auth status
+
+# Create a private GitHub repo, add it as origin, and push the first commit
+git add .
+git commit -m "chore: initialize Research Trajectory OS architecture"
+gh repo create research-trajectory-os --private --source . --remote origin --push
+GitHub CLI supports authentication and repository creation from the terminal, which lets you create, connect, and push the repository in one continuous flow.
+
+Add the other documents
+After the initial push, download the earlier “highest-value” document files and place them under this structure:
+
+text
+docs/
+├── strategy/
+│   ├── problem-definition.md
+│   └── success-metrics.md
+├── identity-control/
+│   └── container-playbook.md
+├── source-intelligence/
+│   └── source-classes.md
+├── query-operations/
+│   └── query-planning.md
+├── collection/
+│   └── connector-strategy.md
+├── ranking/
+│   └── reranking-logic.md
+├── memory/
+│   └── sqlite-schema.md
+├── automation/
+│   └── scheduler-plan.md
+├── productization/
+│   └── service-offer.md
+└── operations/
+    ├── implementation-order.md
+    └── self-annealing-architecture.md
+Then commit and push:
+
+powershell
+git add .
+git commit -m "docs: add research OS operating specifications"
+git push origin main
+Save this conversation link
+In this Perplexity thread, click Share, copy the resulting thread URL, and replace:
+
+text
+PASTE-SHARE-LINK-HERE
+inside archives\README.md. A shared session makes the conversation and its related artifacts accessible to people you share it with.
+
+Then commit that permanent pointer:
+
+powershell
+git add archives\README.md
+git commit -m "docs: archive originating Perplexity thread"
+git push origin main
+Implement the skill
+Once the repo exists, the skill should live at:
+
+text
+skills/research-trajectory-os.skill.md
+Treat it as the product’s behavioral constitution: every agent, prompt, and automation module should inherit its rules around mission-first research, source-class-first ranking, learning evidence, self-annealing changes, explainability, and user autonomy.
+
+The immediate implementation sequence is:
+
+Convert the source hierarchy into configs/source-classes.yaml.
+
+Convert the query-planning workflow into prompts/mission-planner.md.
+
+Implement retrieval connectors under src/retrieval/.
+
+Implement canonicalization, classification, and reranking under src/ranking/.
+
+Create the SQLite schema and event log under src/memory/.
+
+Build the adaptation loop under src/annealing/.
+
+Only then add a dashboard or subscription layer.
+
+This preserves the correct product order: define and protect judgment first; automate it second; commercialize proven outcomes third.
+
+What would you call this skill, or service, or tool? Not a name for it. But more like the category it solves for. Like Algorithm Changer...?
+The category is not really “Algorithm Changer,” because you are not changing Google’s, TikTok’s, or any other company’s algorithm directly.
+
+You are creating a category that sits above external algorithms: a user-owned system that redesigns the person’s information path, research posture, and learning trajectory.
+
+Best category label
+Personal Intelligence Infrastructure
+That may be the broadest and most valuable category.
+
+It communicates that this is not:
+
+Another search engine
+
+Another chatbot
+
+Another note-taking app
+
+A browser extension that blocks ads
+
+A generic “AI agent”
+
+It is infrastructure that helps a person think, research, remember, learn, and make decisions at a higher level over time.
+
+Personal Intelligence Infrastructure: a private system that improves how a person discovers, evaluates, retains, and applies information.
+
+More precise categories
+Depending on who you are speaking to, these are strong alternatives:
+
+Category	What it conveys	Best audience
+Research Operating System	A system for repeatable, high-quality research	Founders, analysts, technical buyers
+Personal Intelligence OS	A persistent layer that compounds knowledge and judgment	Consumers, operators, investors
+Adaptive Research Engine	Search and ranking improve from feedback and outcomes	Product and technical audiences
+Information Trajectory System	Moves users out of repetitive information loops	Thought leadership, education
+Learning-Aware Search	Search that actively improves understanding	Laypeople, educators, consumers
+Cognitive Infrastructure	A serious, high-level layer for thought and decisions	Enterprise, philosophy-heavy positioning
+Algorithmic Agency Layer	Gives the user control over how information reaches them	Privacy, AI, and platform-aware buyers
+Expertise Acceleration Platform	Compresses the path to competent research behavior	Sales and growth messaging
+Personal Knowledge Compounding System	Every search becomes part of a growing foundation	Founders and knowledge workers
+Self-Annealing Intelligence System	Learns from errors and prevents repeated failures	Technical and investor audiences
+My recommendation
+Use a two-level category strategy:
+
+Personal Intelligence OS
+An adaptive research and learning system that helps people escape algorithmic ruts and compound expertise.
+
+Then, for technical buyers:
+
+A self-annealing Research Operating System.
+
+This lets you stay broad enough to become a meaningful company category while remaining specific enough that people understand what it does.
+
+What it solves
+A clean category definition could be:
+
+Personal Intelligence OS is a new category of user-owned cognitive infrastructure. It sits between a person and the internet, replacing passive algorithmic discovery with intentional research, memory, source judgment, learning feedback, and adaptive improvement.
+
+Or simpler:
+
+It is a system for taking back control of your information trajectory.
+
+That phrase—information trajectory—may be central to the category.
+
+Search engines optimize a result page. Social platforms optimize attention. Your system optimizes the person’s trajectory:
+
+What they encounter
+
+What they understand
+
+What they retain
+
+What they apply
+
+What they ask next
+
+How their judgment compounds over time
+
+Terms I would avoid
+Avoid using these as the primary category:
+
+Algorithm changer — implies direct control of third-party algorithms
+
+Algorithm hack — sounds adversarial or gimmicky
+
+Search optimizer — sounds like SEO
+
+Personalization engine — sounds like ad tech
+
+Intelligence score — sounds invasive, judgmental, or high-stakes
+
+Smart search — too generic and crowded
+
+The most durable category statement is:
+
+A Personal Intelligence OS that improves your information trajectory.
+
+And the internal technical definition can remain:
+
+A self-annealing, source-governed research and learning operating system.
+
