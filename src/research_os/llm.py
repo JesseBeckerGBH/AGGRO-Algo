@@ -27,7 +27,7 @@ Transport = Callable[[str, dict[str, str], bytes], dict]
 
 _DEFAULT_PROVIDER = "gemini"
 _DEFAULT_MODEL = {
-    "gemini": "gemini-2.0-flash",
+    "gemini": "gemini-3.6-flash",
     "anthropic": "claude-sonnet-5",
     "openai": "gpt-4o-mini",
 }
@@ -102,9 +102,19 @@ def _call_gemini(model, key, system, user, max_tokens, temperature, transport) -
     }).encode("utf-8")
     data = transport(url, {"Content-Type": "application/json"}, body)
     try:
-        return data["candidates"][0]["content"]["parts"][0]["text"].strip()
+        cand = data["candidates"][0]
+        text = "".join(
+            p.get("text", "") for p in cand.get("content", {}).get("parts", [])
+        ).strip()
     except (KeyError, IndexError) as e:
         raise LLMError(f"gemini: unexpected response shape ({e}): {str(data)[:300]}")
+    if not text:
+        reason = data.get("candidates", [{}])[0].get("finishReason", "?")
+        raise LLMError(
+            f"gemini returned no text (finishReason={reason}); "
+            f"raise max_tokens or check the prompt"
+        )
+    return text
 
 
 def _call_anthropic(model, key, system, user, max_tokens, temperature, transport) -> str:
@@ -162,7 +172,7 @@ def synthesize(
     *,
     provider: str | None = None,
     model: str | None = None,
-    max_tokens: int = 900,
+    max_tokens: int = 8192,  # generous: reasoning-tier models spend budget before the visible answer
     temperature: float = 0.3,
     _transport: Transport | None = None,
 ) -> str:
