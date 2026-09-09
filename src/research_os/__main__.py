@@ -41,8 +41,17 @@ def _cmd_run(args: argparse.Namespace) -> int:
         return 2
     print(out.briefing.body)
     print()
-    print(f"[{out.mission.id}] {out.retrieved} retrieved -> "
-          f"{out.briefing.surfaced} surfaced -> memory: {args.db}", file=sys.stderr)
+
+    surfaced_domains = {r.domain for r in out.reranked[: out.briefing.surfaced]}
+    pool_domains = {r.domain for r in out.reranked}
+    per_conn = ", ".join(f"{k}={v}" for k, v in (out.per_connector or {}).items())
+    print(
+        f"[{out.mission.id}] retrieved {out.retrieved} ({per_conn}) -> "
+        f"{out.briefing.surfaced} surfaced\n"
+        f"  domains: {len(surfaced_domains)} in briefing / {len(pool_domains)} in pool\n"
+        f"  memory: {args.db}",
+        file=sys.stderr,
+    )
     return 0
 
 
@@ -53,7 +62,8 @@ def build_parser() -> argparse.ArgumentParser:
     run = sub.add_parser("run", help="run one mission end to end")
     run.add_argument("--mission", required=True, help="path to a mission YAML")
     run.add_argument("--connector", default="fixture",
-                     help="fixture (default, offline) or brave")
+                     help="one or a comma-list: fixture (offline), brave, marginalia "
+                          "— e.g. --connector brave,marginalia")
     run.add_argument("--limit", type=int, default=10, help="results per query")
     run.add_argument("--top", type=int, default=6, help="results surfaced in the briefing")
     run.add_argument("--db", default="research-memory.sqlite", help="SQLite memory path")

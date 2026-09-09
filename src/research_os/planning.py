@@ -28,7 +28,8 @@ def _query_for(angle: str, subject: str, seed: str, year: str) -> str:
         "technical": grounded,
         "primary_source_hunt": f"{grounded} dataset OR paper OR preprint",
         "mechanism": f"how {seed or subject} predicts {subject}".strip(),
-        "disconfirming": f'{grounded} overrated OR "does not predict" OR overstated OR spurious',
+        "disconfirming": f"{subject} prediction limitations OR overfitting OR "
+                         f'"fails to generalize" OR unreliable',
         "adjacent_field": f"{seed or subject} predictive modelling in other sports",
         "practitioner_experience": f"{grounded} model in practice lessons learned",
         "historical": f"{subject} predictive features prior work",

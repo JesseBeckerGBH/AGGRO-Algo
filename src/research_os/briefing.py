@@ -46,6 +46,13 @@ def render(mission: Mission, reranked: list[Result], *, top: int = 6,
     surfaced = reranked[:top]
     novel_domains = sorted({r.domain for r in surfaced if r.novel_domain})
     contra = [r for r in surfaced if _is_contradicting(r)]
+    # pull disconfirming-angle hits from the FULL ranked set, even below the cut —
+    # an empty "what contradicts it" should mean the angle found nothing, not that
+    # its results were merely outranked
+    for r in reranked:
+        if r.query_angle == "disconfirming" and r not in contra and r not in surfaced:
+            contra.append(r)
+    contra = contra[:3]
     fresh = [
         r for r in surfaced
         if not r.seen_before
@@ -196,6 +203,10 @@ def synthesize(
     """
     surfaced = reranked[:top]
     novel_domains = sorted({r.domain for r in surfaced if r.novel_domain})
+    disconfirming = [
+        r for r in reranked
+        if r.query_angle == "disconfirming" and r not in surfaced
+    ][:3]
 
     user = (
         f"MISSION\n"
@@ -205,6 +216,11 @@ def synthesize(
         f"novelty requirement: {mission.novelty_requirement}\n\n"
         f"RESULTS (already reranked, best first)\n{_result_block(surfaced)}\n"
     )
+    if disconfirming:
+        user += (
+            f"\nDISCONFIRMING-ANGLE RESULTS (from the 'case against' query; use "
+            f"for the 'What contradicts it' section)\n{_result_block(disconfirming)}\n"
+        )
 
     body = llm.synthesize(
         _SYSTEM, user, provider=provider, model=model, _transport=_transport

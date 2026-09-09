@@ -62,8 +62,18 @@ def _class_rank(source_class: str) -> int:
         return len(_CLASS_ORDER)
 
 
+def _stem(word: str) -> str:
+    for suf in ("ing", "ed", "es", "s"):
+        if len(word) > len(suf) + 2 and word.endswith(suf):
+            return word[: -len(suf)]
+    return word
+
+
 def _title_words(title: str) -> set[str]:
-    return {w for w in title.lower().split() if len(w) > 2}
+    cleaned = title.lower().replace("...", " ").replace("…", " ")
+    for junk in ("- github", "| github", "· github", "github -"):
+        cleaned = cleaned.replace(junk, " ")
+    return {_stem(w.strip("-:|·,.")) for w in cleaned.split() if len(w) > 2}
 
 
 def _relevance(result: Result, mission: Mission, pool_size: int) -> float:
@@ -127,7 +137,7 @@ def rerank(results: list[Result], mission: Mission) -> list[Result]:
         words = _title_words(r.title)
         near_dup = (r.snippet_hash != "" and r.snippet_hash in seen_snippets) or any(
             dom == r.domain and words and tw
-            and len(words & tw) / len(words | tw) >= 0.6
+            and (len(words & tw) / len(words | tw) >= 0.55 or len(words & tw) >= 5)
             for dom, tw in seen_titles
         )
         seen_titles.append((r.domain, words))

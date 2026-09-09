@@ -16,7 +16,7 @@ import yaml
 
 from . import briefing as briefing_mod
 from . import canonical, classify, llm, planning, rerank
-from .connectors import get_connector
+from .connectors import get_connectors
 from .models import Briefing, Mission, Result
 from .memory import Memory
 
@@ -27,6 +27,7 @@ class RunOutput:
     briefing: Briefing
     reranked: list[Result]
     retrieved: int
+    per_connector: dict[str, int] = None  # type: ignore[assignment]
 
 
 def load_mission(path: str | Path) -> Mission:
@@ -49,21 +50,24 @@ def run_mission(
     llm_model: str | None = None,
 ) -> RunOutput:
     now = datetime.now(timezone.utc).isoformat(timespec="seconds")
-    conn = get_connector(connector)
+    conns = get_connectors(connector)
     queries = planning.plan(mission)
 
     collected: list[Result] = []
+    per_connector: dict[str, int] = {c.name: 0 for c in conns}
     with Memory(db_path) as mem:
         mem.upsert_mission(mission, now)
 
         for q in queries:
-            hits = conn.search(q.text, limit=limit)
-            for h in hits:
-                h.query_angle = q.angle
-            qid = mem.record_query(mission.id, q, conn.name, now, len(hits))
-            for h in hits:
-                h._query_id = qid  # type: ignore[attr-defined]
-            collected.extend(hits)
+            for conn in conns:
+                hits = conn.search(q.text, limit=limit)
+                for h in hits:
+                    h.query_angle = q.angle
+                qid = mem.record_query(mission.id, q, conn.name, now, len(hits))
+                for h in hits:
+                    h._query_id = qid  # type: ignore[attr-defined]
+                per_connector[conn.name] += len(hits)
+                collected.extend(hits)
 
         retrieved = len(collected)
 
@@ -99,4 +103,7 @@ def run_mission(
             mem.record_results(mission.id, qid or None, rows)
         mem.record_briefing(brief)
 
-    return RunOutput(mission=mission, briefing=brief, reranked=ordered, retrieved=retrieved)
+    return RunOutput(
+        mission=mission, briefing=brief, reranked=ordered,
+        retrieved=retrieved, per_connector=per_connector,
+    )
