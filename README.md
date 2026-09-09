@@ -51,4 +51,15 @@ Judgment first, automation second, commercialization third. See `docs/operations
 
 ## Status
 
-Specification and product architecture stage. Configs defined; vertical slice pending.
+Stage 2 (vertical slice) building. The judgment layer (`configs/`) is written;
+`src/research_os/` runs one mission end to end — query family, retrieval,
+canonicalize + dedupe, source-class-first rerank, SQLite memory, briefing.
+Runs offline with no API key. See `docs/operations/vertical-slice.md`.
+
+```bash
+python -m venv .venv && .venv/Scripts/pip install -e ".[dev]"
+python -m research_os run --mission missions/example-tennis-features.yaml
+```
+
+Not yet: LLM briefing synthesis, live-search validation, multi-connector,
+scheduler, adaptation loop.
