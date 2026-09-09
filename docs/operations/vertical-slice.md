@@ -53,18 +53,40 @@ one provider key in `.env`; `--brief auto` picks llm when a key is present.
 > The briefing tells you something you did not know, from a source you would
 > not have found, in under 400 words.
 
-**Ready to evaluate.** The pipeline produces a source-governed, deduped,
-class-ranked, memory-aware result set (primary + named-expert ahead of
-aggregators and forums; near-duplicate mirror and low-trust farm parked), and
-`--brief llm` now turns that into the narrative. Outstanding: an API key, then
-a real pass/fail judgement on a live mission.
+**First live pass achieved** (Brave + Gemini, `example-tennis-features`).
+73 results across 8 grounded queries → deduped → classified → reranked
+class-first → 6 surfaced, all `primary` (arxiv.org / github.com). The briefing
+returned three predictive features (abstract fatigue/injury metrics; dynamic
+live-serve strength; time-series rally-state models), each with a mechanism
+and a testable method, each sourced and class-labelled — e.g. a neural-net
+fatigue model reporting 4.35% betting-market ROI, and live-serve models at
+>80% match-outcome accuracy. ~370 words.
+
+Two failure modes were found and fixed along the way, which is what this
+stage is for:
+
+1. **Un-anchored queries.** The yaml templates produced `"serve plus one
+   filing OR paper"` with no subject — Brave returned SEC filings. `planning.py`
+   now grounds every query in `mission.subject()` and rotates all vocabulary
+   seeds.
+2. **Irrelevant strong-class results riding class weight.** An off-topic
+   `sec.gov` result outranked on-topic material because `primary` weight was
+   applied regardless of relevance. `rerank.py` now drops results with zero
+   topical overlap *before* class bucketing, and relevance leans on vocabulary
+   overlap rather than origin position.
+
+Remaining weaknesses (Stage 3 material, not blockers): results cluster on two
+domains (novel-domain count = 2); the disconfirming angle returned nothing, so
+"What contradicts it" was empty.
 
 ## Next, in order
 
-1. **Add a provider key** (`GEMINI_API_KEY` free tier is enough) and run
-   `--brief llm` against the fixture, then judge the output.
-2. **Run a live mission** with `--connector brave --brief llm`.
-3. **Only then** Stage 3 (second connector, shared result schema) — measure
-   whether multi-engine actually raises novelty yield or just volume.
+1. **Stage 3** — second connector, one shared result schema. Measure whether
+   multi-engine actually raises novelty yield / domain spread, or just volume.
+2. Strengthen the disconfirming angle so "What contradicts it" is rarely empty.
+3. Replace `planning.py` with the real LLM Mission Planner
+   (`prompts/mission-planner.md`) once multi-connector retrieval is stable.
+
+Still do not build the scheduler (Stage 5) yet.
 
 Do not build the scheduler (Stage 5) against this until step 1 passes.

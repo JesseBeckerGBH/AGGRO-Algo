@@ -22,6 +22,26 @@ from .models import Mission, Result
 _PENALTY_FLOOR = 0.05
 _BONUS_CAP = 1.40
 _NAMED_AUTHOR_CLASSES = {"named_expert", "high_trust_secondary"}
+_STOP = {"one", "plus", "the", "and", "for", "via", "new"}
+
+
+def _topic_words(mission: Mission) -> set[str]:
+    words: set[str] = set()
+    for term in mission.topical_terms():
+        for w in term.split():
+            if len(w) > 2 and w not in _STOP:
+                words.add(w)
+    return words
+
+
+def _off_topic(result: Result, topic_words: set[str]) -> bool:
+    """True when the result shares no subject vocabulary with the mission at
+    all. 'Class before relevance' means class wins *among relevant results* —
+    an irrelevant primary source is noise, not a top hit."""
+    if not topic_words:
+        return False
+    text = f"{result.title} {result.snippet}".lower()
+    return not any(w in text for w in topic_words)
 
 # Strict precedence. Lower rank sorts first. Anything unknown sorts last.
 _CLASS_ORDER = [
@@ -51,12 +71,12 @@ def _relevance(result: Result, mission: Mission, pool_size: int) -> float:
     term in the chain: it only orders results *inside* a class bucket."""
     position = max(0.0, (pool_size - result.raw_rank) / pool_size) if pool_size else 0.0
     text = f"{result.title} {result.snippet}".lower()
-    vocab = [t.lower() for t in mission.vocabulary_seed] + [
-        w.lower() for w in mission.objective.split() if len(w) > 4
-    ]
+    vocab = [t.lower() for t in mission.vocabulary_seed] + list(_topic_words(mission))
     hits = sum(1 for t in set(vocab) if t and t in text)
-    overlap = min(hits / 5.0, 1.0)
-    return round(0.6 * position + 0.4 * overlap, 4)
+    overlap = min(hits / 4.0, 1.0)
+    # lean on topical overlap, not origin position: position mostly reflects the
+    # engine's own ranking, which is what we are here to replace.
+    return round(0.3 * position + 0.7 * overlap, 4)
 
 
 def _penalties(result: Result, domain_seen_count: int, near_dup: bool) -> dict[str, float]:
@@ -86,6 +106,15 @@ def _bonuses(result: Result) -> dict[str, float]:
 
 
 def rerank(results: list[Result], mission: Mission) -> list[Result]:
+    topic_words = _topic_words(mission)
+    kept = [r for r in results if not _off_topic(r, topic_words)]
+    dropped = len(results) - len(kept)
+    if dropped:
+        # leave a breadcrumb on the first survivor for the footer / logs
+        for r in kept[:1]:
+            r.rerank_notes.append(f"dropped {dropped} off-topic result(s) before ranking")
+    results = kept
+
     pool = len(results)
     domain_counts: dict[str, int] = {}
     seen_titles: list[tuple[str, set[str]]] = []  # (domain, title words) of earlier rows
@@ -123,7 +152,7 @@ def rerank(results: list[Result], mission: Mission) -> list[Result]:
         r.final_score = round(
             r.base_score * r.class_weight * penalty_mult * bonus_mult, 6
         )
-        notes = [f"class={r.source_class}({r.class_weight:.2f})"]
+        notes = list(r.rerank_notes) + [f"class={r.source_class}({r.class_weight:.2f})"]
         if r.penalties:
             notes.append("penalties=" + ",".join(r.penalties))
         if r.bonuses:

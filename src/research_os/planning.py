@@ -1,8 +1,11 @@
 """Turn a mission into a query family.
 
 Deterministic stand-in for the LLM Mission Planner (prompts/mission-planner.md).
-It reads angle definitions and the per-novelty angle set from
-configs/query-families.yaml and fills the templates from mission fields.
+It keeps the angle taxonomy and per-novelty angle sets from
+configs/query-families.yaml, but builds each query so it is *grounded in the
+mission subject* — the yaml's bare templates ("{topic} filing OR paper")
+produced un-anchored queries that pulled SEC filings for "serve plus one".
+
 Minimum three angles; disconfirming + adjacent_field forced on medium/high
 novelty so the system cannot build a well-sourced echo chamber.
 """
@@ -18,46 +21,43 @@ _FORCED_ON_NOVELTY = {"medium", "high"}
 _FORCED_ANGLES = ("disconfirming", "adjacent_field")
 
 
-def _fill(template: str, mission: Mission) -> str:
-    seeds = mission.vocabulary_seed or [mission.objective]
-    topic = seeds[0]
-    technical_term = seeds[0]
-    qualifier = seeds[1] if len(seeds) > 1 else ""
-    subs = {
-        "topic": topic,
-        "technical_term": technical_term,
-        "qualifier": qualifier,
-        "structural_problem": topic,
-        "adjacent_domain": "another quantitative field",
-        "current_year": str(_dt.date.today().year),
+def _query_for(angle: str, subject: str, seed: str, year: str) -> str:
+    grounded = f"{subject} {seed}".strip()
+    table = {
+        "canonical": grounded,
+        "technical": grounded,
+        "primary_source_hunt": f"{grounded} dataset OR paper OR preprint",
+        "mechanism": f"how {seed or subject} predicts {subject}".strip(),
+        "disconfirming": f'{grounded} overrated OR "does not predict" OR overstated OR spurious',
+        "adjacent_field": f"{seed or subject} predictive modelling in other sports",
+        "practitioner_experience": f"{grounded} model in practice lessons learned",
+        "historical": f"{subject} predictive features prior work",
+        "quantitative": f"{grounded} benchmark OR accuracy OR effect size",
+        "frontier": f"{grounded} {year}".strip(),
     }
-    out = template
-    for k, v in subs.items():
-        out = out.replace("{" + k + "}", v)
-    return " ".join(out.split())
+    return " ".join(table.get(angle, grounded).split())
 
 
 def plan(mission: Mission) -> list[Query]:
     qf = query_families()
-    angles = qf.get("angles", {})
+    known = set(qf.get("angles", {}))
     chosen = angle_set(mission.novelty_requirement)
 
     if mission.novelty_requirement in _FORCED_ON_NOVELTY:
         for a in _FORCED_ANGLES:
-            if a not in chosen and a in angles:
+            if a not in chosen and a in known:
                 chosen.append(a)
 
+    subject = mission.subject()
+    seeds = [s.strip() for s in mission.vocabulary_seed if s.strip()] or [""]
+    year = str(_dt.date.today().year)
+
     queries: list[Query] = []
-    for name in chosen:
-        spec = angles.get(name)
-        if not spec:
-            continue
-        text = _fill(spec.get("template", "{topic}"), mission)
-        if not text:
-            continue
-        queries.append(
-            Query(angle=name, text=text, expected_source_class="")
-        )
+    for i, name in enumerate(chosen):
+        seed = seeds[i % len(seeds)]
+        text = _query_for(name, subject, seed, year)
+        if text:
+            queries.append(Query(angle=name, text=text))
 
     if len(queries) < 3:  # min_angles_per_mission
         raise ValueError(

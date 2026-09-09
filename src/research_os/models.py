@@ -30,6 +30,31 @@ class Mission:
     excluded_domains: list[str] = field(default_factory=list)
     vocabulary_seed: list[str] = field(default_factory=list)
 
+    _GENERIC_WORDS = {
+        "identify", "predictive", "feature", "features", "underused", "public",
+        "model", "models", "using", "based", "approach", "system", "new", "that",
+        "are", "with", "how", "why", "the", "for", "and", "into", "from",
+    }
+
+    def topical_terms(self) -> list[str]:
+        """Subject words from the objective plus the vocabulary seeds. Used to
+        ground queries and to gate irrelevant results in rerank."""
+        words = [w.strip(",.:;()").lower() for w in self.objective.split()]
+        subject = [w for w in words if len(w) > 2 and w not in self._GENERIC_WORDS]
+        seeds = [s.lower().strip() for s in self.vocabulary_seed if s.strip()]
+        seen: set[str] = set()
+        out: list[str] = []
+        for t in subject + seeds:
+            if t and t not in seen:
+                seen.add(t)
+                out.append(t)
+        return out
+
+    def subject(self) -> str:
+        words = [w.strip(",.:;()").lower() for w in self.objective.split()]
+        keep = [w for w in words if len(w) > 2 and w not in self._GENERIC_WORDS]
+        return " ".join(keep[:3]) or (self.vocabulary_seed[0] if self.vocabulary_seed else self.id)
+
     @staticmethod
     def from_dict(d: dict) -> "Mission":
         required = ("id", "objective", "success_condition")
