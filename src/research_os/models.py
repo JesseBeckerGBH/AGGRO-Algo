@@ -109,6 +109,10 @@ class Result:
     # filled by memory.py
     seen_before: bool = False
     novel_domain: bool = False
+    domain_prior_hits: int = 0  # times this mission has stored this domain before
+
+    # filled by novelty.py
+    novelty_score: float = 0.0
 
     # filled by rerank.py
     base_score: float = 0.0

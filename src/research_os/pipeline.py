@@ -15,7 +15,7 @@ from pathlib import Path
 import yaml
 
 from . import briefing as briefing_mod
-from . import canonical, classify, llm, planning, rerank
+from . import canonical, classify, llm, novelty, planning, rerank
 from .connectors import get_connectors
 from .models import Briefing, Mission, Result
 from .memory import Memory
@@ -28,6 +28,9 @@ class RunOutput:
     reranked: list[Result]
     retrieved: int
     per_connector: dict[str, int] = None  # type: ignore[assignment]
+    novelty_yield: float = 0.0
+    domain_top_share: float = 0.0
+    new_vocab: list[str] = None  # type: ignore[assignment]
 
 
 def load_mission(path: str | Path) -> Mission:
@@ -51,6 +54,14 @@ def run_mission(
 ) -> RunOutput:
     now = datetime.now(timezone.utc).isoformat(timespec="seconds")
     conns = get_connectors(connector)
+
+    # Stage 4: fold operator-promoted vocabulary back into the mission before
+    # planning (query-families.yaml: vocabulary_escalation).
+    with Memory(db_path) as _m:
+        for term in _m.promoted_terms(mission.id):
+            if term.lower() not in {s.lower() for s in mission.vocabulary_seed}:
+                mission.vocabulary_seed.append(term)
+
     queries = planning.plan(mission)
 
     collected: list[Result] = []
@@ -80,6 +91,8 @@ def run_mission(
         ]
         classify.classify(deduped)
         mem.mark_novelty(mission.id, deduped)
+        prior_shares, prior_top = mem.domain_shares(mission.id)  # state BEFORE this run
+        novelty.score(deduped, prior_shares)
         ordered = rerank.rerank(deduped, mission)
 
         mode = brief_mode
@@ -95,15 +108,26 @@ def run_mission(
                 mission, ordered, top=top, retrieved=retrieved, generated_at=now
             )
 
+        surfaced = ordered[:top]
+        n_yield = novelty.yield_of(surfaced)
+
         # persist the deduped+scored set and the briefing
         by_qid: dict[int, list[Result]] = {}
         for r in ordered:
             by_qid.setdefault(getattr(r, "_query_id", 0), []).append(r)
         for qid, rows in by_qid.items():
             mem.record_results(mission.id, qid or None, rows)
-        mem.record_briefing(brief)
+        mem.record_briefing(brief, novelty_yield=n_yield)
+
+        # Stage 4: update concentration + harvest vocabulary AFTER scoring this run
+        mem.record_domain_hits(mission.id, ordered, now)
+        new_vocab = mem.harvest_vocab(
+            mission.id, ordered, mission.vocabulary_seed, now
+        )
+        _, top_share = mem.domain_shares(mission.id)
 
     return RunOutput(
         mission=mission, briefing=brief, reranked=ordered,
         retrieved=retrieved, per_connector=per_connector,
+        novelty_yield=n_yield, domain_top_share=top_share, new_vocab=new_vocab,
     )

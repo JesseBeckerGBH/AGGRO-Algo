@@ -1,15 +1,19 @@
 """CLI entry point.
 
-    python -m research_os run --mission missions/example-tennis-features.yaml
-    python -m research_os run --mission M.yaml --connector brave --top 6
+    python -m research_os run   --mission missions/example-tennis-features.yaml
+    python -m research_os run   --mission M.yaml --connector brave,marginalia --brief llm
+    python -m research_os vocab --mission M.yaml                 # review harvested terms
+    python -m research_os vocab --mission M.yaml --promote "serve rates" --reject "grand slam"
 """
 
 from __future__ import annotations
 
 import argparse
 import sys
+from datetime import datetime, timezone
 
 from .llm import LLMError, LLMKeyMissing
+from .memory import Memory
 from .pipeline import load_mission, run_mission
 
 for _stream in (sys.stdout, sys.stderr):
@@ -45,18 +49,52 @@ def _cmd_run(args: argparse.Namespace) -> int:
     surfaced_domains = {r.domain for r in out.reranked[: out.briefing.surfaced]}
     pool_domains = {r.domain for r in out.reranked}
     per_conn = ", ".join(f"{k}={v}" for k, v in (out.per_connector or {}).items())
-    print(
+    lines = [
         f"[{out.mission.id}] retrieved {out.retrieved} ({per_conn}) -> "
-        f"{out.briefing.surfaced} surfaced\n"
-        f"  domains: {len(surfaced_domains)} in briefing / {len(pool_domains)} in pool\n"
+        f"{out.briefing.surfaced} surfaced",
+        f"  domains: {len(surfaced_domains)} in briefing / {len(pool_domains)} in pool"
+        f"  |  top-domain share (memory): {out.domain_top_share:.0%}",
+        f"  novelty yield: {out.novelty_yield:.0%}"
+        + ("   [below 20% floor]" if out.novelty_yield < 0.20 else ""),
         f"  memory: {args.db}",
-        file=sys.stderr,
-    )
+    ]
+    if out.new_vocab:
+        shown = ", ".join(f'"{t}"' for t in out.new_vocab[:6])
+        more = f" (+{len(out.new_vocab) - 6} more)" if len(out.new_vocab) > 6 else ""
+        lines.append(f"  {len(out.new_vocab)} new vocab candidate(s): {shown}{more}")
+        lines.append(f"  review: research-os vocab --mission {args.mission} --db {args.db}")
+    print("\n".join(lines), file=sys.stderr)
+    return 0
+
+
+def _cmd_vocab(args: argparse.Namespace) -> int:
+    mission = load_mission(args.mission)
+    now = datetime.now(timezone.utc).isoformat(timespec="seconds")
+    with Memory(args.db) as mem:
+        for term in args.promote or []:
+            ok = mem.set_vocab_status(mission.id, term, "promoted", now)
+            print(f"{'promoted' if ok else 'not found'}: {term!r}", file=sys.stderr)
+        for term in args.reject or []:
+            ok = mem.set_vocab_status(mission.id, term, "rejected", now)
+            print(f"{'rejected' if ok else 'not found'}: {term!r}", file=sys.stderr)
+
+        rows = mem.list_vocab(mission.id, status=args.status)
+        if not rows:
+            print("(no vocabulary terms recorded for this mission yet)")
+            return 0
+        print(f"{'STATUS':<10} {'SRCS':>4}  TERM")
+        for r in rows:
+            print(f"{r['status']:<10} {r['distinct_sources']:>4}  {r['term']}")
+        promoted = [r["term"] for r in rows if r["status"] == "promoted"]
+        if promoted:
+            print(f"\nfed as vocabulary_seed on the next run: {', '.join(promoted)}",
+                  file=sys.stderr)
     return 0
 
 
 def build_parser() -> argparse.ArgumentParser:
-    p = argparse.ArgumentParser(prog="research-os", description=__doc__)
+    p = argparse.ArgumentParser(prog="research-os", description=__doc__,
+                                formatter_class=argparse.RawDescriptionHelpFormatter)
     sub = p.add_subparsers(dest="command", required=True)
 
     run = sub.add_parser("run", help="run one mission end to end")
@@ -74,6 +112,17 @@ def build_parser() -> argparse.ArgumentParser:
                      help="gemini | anthropic | openai (else $LLM_PROVIDER, else gemini)")
     run.add_argument("--llm-model", default=None, help="override the provider default model")
     run.set_defaults(func=_cmd_run)
+
+    voc = sub.add_parser("vocab", help="review / promote harvested vocabulary")
+    voc.add_argument("--mission", required=True, help="path to the mission YAML")
+    voc.add_argument("--db", default="research-memory.sqlite", help="SQLite memory path")
+    voc.add_argument("--status", choices=("candidate", "promoted", "rejected"),
+                     default=None, help="filter the listing")
+    voc.add_argument("--promote", action="append", metavar="TERM",
+                     help="mark a term promoted (repeatable) — fed as vocabulary_seed next run")
+    voc.add_argument("--reject", action="append", metavar="TERM",
+                     help="mark a term rejected (repeatable)")
+    voc.set_defaults(func=_cmd_vocab)
     return p
 
 

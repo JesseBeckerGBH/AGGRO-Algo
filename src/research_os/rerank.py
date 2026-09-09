@@ -159,8 +159,11 @@ def rerank(results: list[Result], mission: Mission) -> list[Result]:
             bonus_mult *= f
         bonus_mult = min(bonus_mult, _BONUS_CAP)
 
+        # novelty orders results *within* a class bucket (reranking-logic.md:
+        # class, then relevance, then novelty). 0.0 -> 0.85x, 1.0 -> 1.15x.
+        novelty_factor = 0.85 + 0.30 * r.novelty_score
         r.final_score = round(
-            r.base_score * r.class_weight * penalty_mult * bonus_mult, 6
+            r.base_score * r.class_weight * penalty_mult * bonus_mult * novelty_factor, 6
         )
         notes = list(r.rerank_notes) + [f"class={r.source_class}({r.class_weight:.2f})"]
         if r.penalties:
