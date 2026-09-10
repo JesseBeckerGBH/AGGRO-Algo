@@ -33,6 +33,7 @@ desktop.ini
 logs/
 data/raw/
 data/cache/
+telemetry/*.jsonl
 
 # Build artifacts
 dist/

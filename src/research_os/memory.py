@@ -61,6 +61,8 @@ CREATE TABLE IF NOT EXISTS briefings (
     surfaced        INTEGER,
     novel_domains   INTEGER,
     novelty_yield   REAL,
+    primary_share   REAL,   -- of the surfaced set (drift: primary_share_floor)
+    disconfirming_share REAL, -- of the surfaced set (drift: disconfirming_share_floor)
     usefulness_rating TEXT
 );
 -- Stage 4: per-mission domain concentration.
@@ -83,6 +85,31 @@ CREATE TABLE IF NOT EXISTS promoted_vocab (
     first_seen       TEXT,
     decided_at       TEXT,
     PRIMARY KEY (mission_id, term)
+);
+-- Stage 6: structured failure log. Every detected failure is classified into
+-- exactly one of the six classes in adaptation-rules.yaml.
+CREATE TABLE IF NOT EXISTS failure_events (
+    failure_id      INTEGER PRIMARY KEY AUTOINCREMENT,
+    mission_id      TEXT NOT NULL REFERENCES missions(mission_id),
+    detected_at     TEXT,
+    failure_class   TEXT NOT NULL,   -- connector_failure | ranking_failure | novelty_failure
+                                     -- | coverage_failure | identity_failure | briefing_failure
+    signal          TEXT,            -- which signal from the taxonomy fired
+    severity        TEXT,            -- low | medium | high | critical
+    detail          TEXT,
+    run_at          TEXT             -- groups failures from one run
+);
+CREATE INDEX IF NOT EXISTS ix_failure_mission ON failure_events(mission_id, detected_at);
+-- Stage 6: drift check history (the weekly cadence check).
+CREATE TABLE IF NOT EXISTS drift_checks (
+    check_id        INTEGER PRIMARY KEY AUTOINCREMENT,
+    mission_id      TEXT NOT NULL REFERENCES missions(mission_id),
+    checked_at      TEXT,
+    novelty_yield   REAL,
+    domain_concentration REAL,
+    primary_share   REAL,
+    disconfirming_share  REAL,
+    breaches        TEXT             -- comma list of breached thresholds, '' if clean
 );
 """
 
@@ -273,6 +300,60 @@ class Memory:
             "ORDER BY term", (mission_id,),
         )]
 
+    # -- Stage 6: telemetry ------------------------------------------------
+    def record_failures(self, mission_id: str, events: list[dict], run_at: str) -> int:
+        if not events:
+            return 0
+        self.conn.executemany(
+            "INSERT INTO failure_events (mission_id, detected_at, failure_class, "
+            "signal, severity, detail, run_at) VALUES (?,?,?,?,?,?,?)",
+            [
+                (mission_id, run_at, e["failure_class"], e.get("signal", ""),
+                 e.get("severity", ""), e.get("detail", ""), run_at)
+                for e in events
+            ],
+        )
+        self.conn.commit()
+        return len(events)
+
+    def recent_failures(self, mission_id: str, limit: int = 20) -> list[sqlite3.Row]:
+        return list(self.conn.execute(
+            "SELECT detected_at, failure_class, signal, severity, detail "
+            "FROM failure_events WHERE mission_id = ? ORDER BY failure_id DESC LIMIT ?",
+            (mission_id, limit),
+        ))
+
+    def failure_counts(self, mission_id: str, since: str | None = None) -> dict[str, int]:
+        sql = "SELECT failure_class, COUNT(*) n FROM failure_events WHERE mission_id = ?"
+        args: list = [mission_id]
+        if since:
+            sql += " AND detected_at >= ?"
+            args.append(since)
+        sql += " GROUP BY failure_class"
+        return {row["failure_class"]: row["n"] for row in self.conn.execute(sql, args)}
+
+    def recent_novelty_yield(self, mission_id: str, n: int = 3) -> float:
+        return self._recent_avg(mission_id, "novelty_yield", n)
+
+    def recent_primary_share(self, mission_id: str, n: int = 3) -> float:
+        return self._recent_avg(mission_id, "primary_share", n)
+
+    def recent_disconfirming_share(self, mission_id: str, n: int = 3) -> float:
+        return self._recent_avg(mission_id, "disconfirming_share", n)
+
+    def record_drift_check(self, mission_id: str, checked_at: str, metrics: dict,
+                           breaches: list[str]) -> int:
+        cur = self.conn.execute(
+            "INSERT INTO drift_checks (mission_id, checked_at, novelty_yield, "
+            "domain_concentration, primary_share, disconfirming_share, breaches) "
+            "VALUES (?,?,?,?,?,?,?)",
+            (mission_id, checked_at, metrics.get("novelty_yield"),
+             metrics.get("domain_concentration"), metrics.get("primary_share"),
+             metrics.get("disconfirming_share"), ",".join(breaches)),
+        )
+        self.conn.commit()
+        return int(cur.lastrowid)
+
     # -- writes --------------------------------------------------------
     def record_query(self, mission_id: str, q: Query, connector: str,
                      executed_at: str, count: int) -> int:
@@ -298,12 +379,23 @@ class Memory:
         )
         self.conn.commit()
 
-    def record_briefing(self, b: Briefing, novelty_yield: float = 0.0) -> int:
+    def record_briefing(self, b: Briefing, novelty_yield: float = 0.0,
+                        primary_share: float = 0.0,
+                        disconfirming_share: float = 0.0) -> int:
         cur = self.conn.execute(
             "INSERT INTO briefings (mission_id, generated_at, body, retrieved, "
-            "surfaced, novel_domains, novelty_yield) VALUES (?,?,?,?,?,?,?)",
+            "surfaced, novel_domains, novelty_yield, primary_share, disconfirming_share) "
+            "VALUES (?,?,?,?,?,?,?,?,?)",
             (b.mission_id, b.generated_at, b.body, b.retrieved, b.surfaced,
-             b.novel_domains, novelty_yield),
+             b.novel_domains, novelty_yield, primary_share, disconfirming_share),
         )
         self.conn.commit()
         return int(cur.lastrowid)
+
+    def _recent_avg(self, mission_id: str, column: str, n: int) -> float:
+        rows = list(self.conn.execute(
+            f"SELECT {column} v FROM briefings WHERE mission_id = ? "
+            f"ORDER BY briefing_id DESC LIMIT ?", (mission_id, n),
+        ))
+        vals = [r["v"] for r in rows if r["v"] is not None]
+        return round(sum(vals) / len(vals), 4) if vals else 0.0

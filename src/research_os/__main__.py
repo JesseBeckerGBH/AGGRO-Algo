@@ -63,7 +63,51 @@ def _cmd_run(args: argparse.Namespace) -> int:
         more = f" (+{len(out.new_vocab) - 6} more)" if len(out.new_vocab) > 6 else ""
         lines.append(f"  {len(out.new_vocab)} new vocab candidate(s): {shown}{more}")
         lines.append(f"  review: research-os vocab --mission {args.mission} --db {args.db}")
+
+    if out.failures:
+        by_class: dict[str, int] = {}
+        for f in out.failures:
+            by_class[f["failure_class"]] = by_class.get(f["failure_class"], 0) + 1
+        lines.append("  failures: " + ", ".join(f"{k}×{v}" for k, v in by_class.items()))
+    if out.drift and out.drift.breaches:
+        lines.append("  DRIFT: " + "; ".join(f"{n} ({m})" for n, m in out.drift.breaches))
+    elif out.drift:
+        lines.append("  drift: clean")
     print("\n".join(lines), file=sys.stderr)
+    return 0
+
+
+def _cmd_drift(args: argparse.Namespace) -> int:
+    from .telemetry import check_drift
+    mission = load_mission(args.mission)
+    with Memory(args.db) as mem:
+        rep = check_drift(mission.id, mem)
+    print(f"drift check — {mission.id}")
+    for k, v in rep.metrics.items():
+        print(f"  {k:<22} {v:.0%}")
+    if rep.clean:
+        print("\nclean — no thresholds breached")
+        return 0
+    print("\nBREACHES:")
+    for name, msg in rep.breaches:
+        print(f"  {name}: {msg}")
+    print("\nadaptation-rules.yaml on_breach: raise alert, force query-family "
+          "regeneration on affected missions, require operator acknowledgement "
+          "before the next scheduled run (Stage 7).")
+    return 1
+
+
+def _cmd_failures(args: argparse.Namespace) -> int:
+    mission = load_mission(args.mission)
+    with Memory(args.db) as mem:
+        rows = mem.recent_failures(mission.id, limit=args.limit)
+    if not rows:
+        print("(no failure events recorded for this mission)")
+        return 0
+    print(f"{'WHEN':<21} {'SEVERITY':<9} {'CLASS':<20} SIGNAL / DETAIL")
+    for r in rows:
+        print(f"{r['detected_at']:<21} {r['severity']:<9} {r['failure_class']:<20} "
+              f"{r['signal']} — {r['detail']}")
     return 0
 
 
@@ -123,6 +167,17 @@ def build_parser() -> argparse.ArgumentParser:
     voc.add_argument("--reject", action="append", metavar="TERM",
                      help="mark a term rejected (repeatable)")
     voc.set_defaults(func=_cmd_vocab)
+
+    dft = sub.add_parser("drift", help="run the drift check against adaptation-rules.yaml")
+    dft.add_argument("--mission", required=True, help="path to the mission YAML")
+    dft.add_argument("--db", default="research-memory.sqlite", help="SQLite memory path")
+    dft.set_defaults(func=_cmd_drift)
+
+    fail = sub.add_parser("failures", help="list recent logged failure events")
+    fail.add_argument("--mission", required=True, help="path to the mission YAML")
+    fail.add_argument("--db", default="research-memory.sqlite", help="SQLite memory path")
+    fail.add_argument("--limit", type=int, default=20)
+    fail.set_defaults(func=_cmd_failures)
     return p
 
 

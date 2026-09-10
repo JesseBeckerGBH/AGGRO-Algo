@@ -15,10 +15,11 @@ from pathlib import Path
 import yaml
 
 from . import briefing as briefing_mod
-from . import canonical, classify, llm, novelty, planning, rerank
+from . import canonical, classify, llm, novelty, planning, rerank, telemetry
 from .connectors import get_connectors
 from .models import Briefing, Mission, Result
 from .memory import Memory
+from .telemetry import DriftReport
 
 
 @dataclass
@@ -31,6 +32,8 @@ class RunOutput:
     novelty_yield: float = 0.0
     domain_top_share: float = 0.0
     new_vocab: list[str] = None  # type: ignore[assignment]
+    failures: list[dict] = None  # type: ignore[assignment]
+    drift: DriftReport = None  # type: ignore[assignment]
 
 
 def load_mission(path: str | Path) -> Mission:
@@ -69,9 +72,17 @@ def run_mission(
     with Memory(db_path) as mem:
         mem.upsert_mission(mission, now)
 
+        connector_errors: dict[str, tuple[str, str]] = {}
         for q in queries:
             for conn in conns:
-                hits = conn.search(q.text, limit=limit)
+                try:
+                    hits = conn.search(q.text, limit=limit)
+                except Exception as exc:  # a dead connector must not kill the run
+                    connector_errors[conn.name] = (
+                        type(exc).__name__, str(exc)[:200]
+                    )
+                    mem.record_query(mission.id, q, conn.name, now, 0)
+                    continue
                 for h in hits:
                     h.query_angle = q.angle
                 qid = mem.record_query(mission.id, q, conn.name, now, len(hits))
@@ -110,6 +121,15 @@ def run_mission(
 
         surfaced = ordered[:top]
         n_yield = novelty.yield_of(surfaced)
+        p_share = (
+            sum(1 for r in surfaced if r.source_class == "primary") / len(surfaced)
+            if surfaced else 0.0
+        )
+        d_share = (
+            sum(1 for r in surfaced
+                if r.query_angle == "disconfirming" or briefing_mod._is_contradicting(r))
+            / len(surfaced) if surfaced else 0.0
+        )
 
         # persist the deduped+scored set and the briefing
         by_qid: dict[int, list[Result]] = {}
@@ -117,7 +137,8 @@ def run_mission(
             by_qid.setdefault(getattr(r, "_query_id", 0), []).append(r)
         for qid, rows in by_qid.items():
             mem.record_results(mission.id, qid or None, rows)
-        mem.record_briefing(brief, novelty_yield=n_yield)
+        mem.record_briefing(brief, novelty_yield=n_yield,
+                            primary_share=p_share, disconfirming_share=d_share)
 
         # Stage 4: update concentration + harvest vocabulary AFTER scoring this run
         mem.record_domain_hits(mission.id, ordered, now)
@@ -126,8 +147,20 @@ def run_mission(
         )
         _, top_share = mem.domain_shares(mission.id)
 
+        # Stage 6: classify + log this run's failures, then run the drift check
+        failures = telemetry.detect_failures(
+            mission, surfaced, brief,
+            connector_errors=connector_errors, retrieved=retrieved,
+        )
+        mem.record_failures(mission.id, failures, now)
+        drift = telemetry.check_drift(mission.id, mem)
+        mem.record_drift_check(
+            mission.id, now, drift.metrics, [name for name, _ in drift.breaches]
+        )
+
     return RunOutput(
         mission=mission, briefing=brief, reranked=ordered,
         retrieved=retrieved, per_connector=per_connector,
         novelty_yield=n_yield, domain_top_share=top_share, new_vocab=new_vocab,
+        failures=failures, drift=drift,
     )
