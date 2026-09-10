@@ -111,6 +111,26 @@ CREATE TABLE IF NOT EXISTS drift_checks (
     disconfirming_share  REAL,
     breaches        TEXT             -- comma list of breached thresholds, '' if clean
 );
+-- Stage 7: versioned policy changes (the self-annealing overlay).
+-- The loop never edits configs/*.yaml (doctrine, versioned in git). It records
+-- bounded, reversible deltas here; the runtime applies the active ones on top
+-- of the base config.
+CREATE TABLE IF NOT EXISTS policy_versions (
+    version       INTEGER PRIMARY KEY AUTOINCREMENT,
+    mission_id    TEXT NOT NULL REFERENCES missions(mission_id),
+    created_at    TEXT,
+    lever         TEXT NOT NULL,     -- connector_routing | briefing_length_target
+                                     -- | domain_weight_adjustment | class_weight_adjustment
+                                     -- | query_family_regeneration
+    trigger       TEXT,              -- failure class + evidence count that justified it
+    change_json   TEXT NOT NULL,     -- the delta, as JSON
+    status        TEXT NOT NULL DEFAULT 'active',
+                                     -- active | pending_operator | rolled_back | superseded
+    evidence_window TEXT,            -- 'from..to' run timestamps
+    decided_at    TEXT,
+    note          TEXT
+);
+CREATE INDEX IF NOT EXISTS ix_policy_mission ON policy_versions(mission_id, status);
 """
 
 # generic words that are never worth promoting as vocabulary
@@ -353,6 +373,122 @@ class Memory:
         )
         self.conn.commit()
         return int(cur.lastrowid)
+
+    def drift_history(self, mission_id: str, limit: int = 20) -> list[sqlite3.Row]:
+        return list(self.conn.execute(
+            "SELECT checked_at, novelty_yield, domain_concentration, primary_share, "
+            "disconfirming_share, breaches FROM drift_checks WHERE mission_id = ? "
+            "ORDER BY check_id DESC LIMIT ?", (mission_id, limit),
+        ))
+
+    # -- Stage 7: policy overlay ----------------------------------------
+    def add_policy_version(self, mission_id: str, created_at: str, lever: str,
+                           trigger: str, change: dict, *, status: str = "active",
+                           evidence_window: str = "", note: str = "") -> int:
+        import json
+        cur = self.conn.execute(
+            "INSERT INTO policy_versions (mission_id, created_at, lever, trigger, "
+            "change_json, status, evidence_window, note) VALUES (?,?,?,?,?,?,?,?)",
+            (mission_id, created_at, lever, trigger, json.dumps(change),
+             status, evidence_window, note),
+        )
+        self.conn.commit()
+        return int(cur.lastrowid)
+
+    def _policy_rows(self, mission_id: str, status: str | None = None) -> list[sqlite3.Row]:
+        sql = "SELECT * FROM policy_versions WHERE mission_id = ?"
+        args: list = [mission_id]
+        if status:
+            sql += " AND status = ?"
+            args.append(status)
+        sql += " ORDER BY version"
+        return list(self.conn.execute(sql, args))
+
+    def active_overlay(self, mission_id: str) -> dict:
+        """Collapse all active policy versions into one overlay dict:
+            {connector_demotions: {name: n}, briefing_word_target: int|None,
+             domain_weight_delta: {domain: float}, class_weight_delta: {cls: float}}
+        Later versions win for scalar levers; deltas accumulate."""
+        import json
+        overlay: dict = {
+            "connector_demotions": {}, "briefing_word_target": None,
+            "domain_weight_delta": {}, "class_weight_delta": {},
+            "query_regen": False, "versions": [],
+        }
+        for row in self._policy_rows(mission_id, status="active"):
+            change = json.loads(row["change_json"])
+            overlay["versions"].append(row["version"])
+            if row["lever"] == "query_family_regeneration":
+                overlay["query_regen"] = True
+            if row["lever"] == "connector_routing":
+                for name, n in change.get("demote", {}).items():
+                    overlay["connector_demotions"][name] = (
+                        overlay["connector_demotions"].get(name, 0) + n
+                    )
+            elif row["lever"] == "briefing_length_target":
+                overlay["briefing_word_target"] = change.get("word_target")
+            elif row["lever"] == "domain_weight_adjustment":
+                for d, delta in change.get("delta", {}).items():
+                    overlay["domain_weight_delta"][d] = (
+                        overlay["domain_weight_delta"].get(d, 0.0) + delta
+                    )
+            elif row["lever"] == "class_weight_adjustment":
+                for c, delta in change.get("delta", {}).items():
+                    overlay["class_weight_delta"][c] = (
+                        overlay["class_weight_delta"].get(c, 0.0) + delta
+                    )
+        return overlay
+
+    def last_change_for_lever(self, mission_id: str, lever: str) -> sqlite3.Row | None:
+        rows = list(self.conn.execute(
+            "SELECT * FROM policy_versions WHERE mission_id = ? AND lever = ? "
+            "AND status IN ('active','rolled_back') ORDER BY version DESC LIMIT 1",
+            (mission_id, lever),
+        ))
+        return rows[0] if rows else None
+
+    def cumulative_delta_for_lever(self, mission_id: str, lever: str) -> float:
+        """Sum of absolute magnitude of active deltas for a bounded lever."""
+        import json
+        total = 0.0
+        for row in self._policy_rows(mission_id, status="active"):
+            if row["lever"] != lever:
+                continue
+            for v in json.loads(row["change_json"]).get("delta", {}).values():
+                total += abs(v)
+        return round(total, 4)
+
+    def consecutive_rollbacks(self, mission_id: str, lever: str) -> int:
+        n = 0
+        for row in reversed(self._policy_rows(mission_id)):
+            if row["lever"] != lever:
+                continue
+            if row["status"] == "rolled_back":
+                n += 1
+            else:
+                break
+        return n
+
+    def set_policy_status(self, version: int, status: str, now: str, note: str = "") -> bool:
+        cur = self.conn.execute(
+            "UPDATE policy_versions SET status = ?, decided_at = ?, "
+            "note = COALESCE(NULLIF(?, ''), note) WHERE version = ?",
+            (status, now, note, version),
+        )
+        self.conn.commit()
+        return cur.rowcount > 0
+
+    def list_policy(self, mission_id: str) -> list[sqlite3.Row]:
+        return self._policy_rows(mission_id)
+
+    def prune_policy(self, mission_id: str, keep: int = 20) -> int:
+        rows = self._policy_rows(mission_id)
+        stale = [r["version"] for r in rows if r["status"] in ("rolled_back", "superseded")]
+        drop = stale[:-keep] if len(stale) > keep else []
+        for v in drop:
+            self.conn.execute("DELETE FROM policy_versions WHERE version = ?", (v,))
+        self.conn.commit()
+        return len(drop)
 
     # -- writes --------------------------------------------------------
     def record_query(self, mission_id: str, q: Query, connector: str,

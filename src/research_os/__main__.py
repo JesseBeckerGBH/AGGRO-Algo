@@ -35,6 +35,7 @@ def _cmd_run(args: argparse.Namespace) -> int:
             brief_mode=args.brief,
             llm_provider=args.llm_provider,
             llm_model=args.llm_model,
+            adapt=not args.no_adapt,
         )
     except LLMKeyMissing as e:
         print(f"error: {e}\nhint: cp .env.example .env and add a key, or use "
@@ -73,6 +74,18 @@ def _cmd_run(args: argparse.Namespace) -> int:
         lines.append("  DRIFT: " + "; ".join(f"{n} ({m})" for n, m in out.drift.breaches))
     elif out.drift:
         lines.append("  drift: clean")
+
+    a = out.adaptation or {}
+    for x in a.get("applied", []):
+        lines.append(f"  adapt applied v{x['version']}: {x['lever']} — {x['rationale']}")
+    for x in a.get("pending", []):
+        lines.append(f"  adapt PENDING v{x['version']}: {x['lever']} — {x['rationale']}")
+        lines.append(f"    approve: research-os adapt --mission {args.mission} "
+                     f"--db {args.db} --approve {x['version']}")
+    for x in a.get("decisions", []):
+        if x["decision"] != "keep":
+            lines.append(f"  adapt {x['decision']} v{x['version']}: {x['lever']} "
+                         f"(q {x['q_before']}->{x['q_after']})")
     print("\n".join(lines), file=sys.stderr)
     return 0
 
@@ -95,6 +108,37 @@ def _cmd_drift(args: argparse.Namespace) -> int:
           "regeneration on affected missions, require operator acknowledgement "
           "before the next scheduled run (Stage 7).")
     return 1
+
+
+def _cmd_adapt(args: argparse.Namespace) -> int:
+    import json
+    from datetime import datetime, timezone
+    from . import adaptation
+    mission = load_mission(args.mission)
+    now = datetime.now(timezone.utc).isoformat(timespec="seconds")
+    with Memory(args.db) as mem:
+        for v in args.approve or []:
+            ok = mem.set_policy_status(int(v), "active", now, "operator-approved")
+            print(f"{'approved' if ok else 'not found'}: v{v}", file=sys.stderr)
+        for v in args.reject or []:
+            ok = mem.set_policy_status(int(v), "rolled_back", now, "operator-rejected")
+            print(f"{'rejected' if ok else 'not found'}: v{v}", file=sys.stderr)
+        for v in args.rollback or []:
+            ok = mem.set_policy_status(int(v), "rolled_back", now, "operator-rollback")
+            print(f"{'rolled back' if ok else 'not found'}: v{v}", file=sys.stderr)
+        if args.run_cycle:
+            res = adaptation.run_cycle(mission, mem, now)
+            print(json.dumps(res, indent=2))
+
+        rows = mem.list_policy(mission.id)
+        if not rows:
+            print("(no policy versions for this mission)")
+            return 0
+        print(f"{'VER':>4} {'STATUS':<16} {'LEVER':<26} TRIGGER / NOTE")
+        for r in rows:
+            print(f"{r['version']:>4} {r['status']:<16} {r['lever']:<26} "
+                  f"{r['trigger']} — {r['note']}")
+    return 0
 
 
 def _cmd_failures(args: argparse.Namespace) -> int:
@@ -155,6 +199,8 @@ def build_parser() -> argparse.ArgumentParser:
     run.add_argument("--llm-provider", default=None,
                      help="gemini | anthropic | openai (else $LLM_PROVIDER, else gemini)")
     run.add_argument("--llm-model", default=None, help="override the provider default model")
+    run.add_argument("--no-adapt", action="store_true",
+                     help="skip the Stage 7 self-annealing cycle this run")
     run.set_defaults(func=_cmd_run)
 
     voc = sub.add_parser("vocab", help="review / promote harvested vocabulary")
@@ -178,6 +224,19 @@ def build_parser() -> argparse.ArgumentParser:
     fail.add_argument("--db", default="research-memory.sqlite", help="SQLite memory path")
     fail.add_argument("--limit", type=int, default=20)
     fail.set_defaults(func=_cmd_failures)
+
+    adp = sub.add_parser("adapt", help="review / approve / roll back policy versions")
+    adp.add_argument("--mission", required=True, help="path to the mission YAML")
+    adp.add_argument("--db", default="research-memory.sqlite", help="SQLite memory path")
+    adp.add_argument("--approve", action="append", metavar="VER",
+                     help="activate a pending_operator policy version (repeatable)")
+    adp.add_argument("--reject", action="append", metavar="VER",
+                     help="reject a pending policy version (repeatable)")
+    adp.add_argument("--rollback", action="append", metavar="VER",
+                     help="roll back an active policy version (repeatable)")
+    adp.add_argument("--run-cycle", action="store_true",
+                     help="run propose->gate->apply->evaluate now (also runs each `run`)")
+    adp.set_defaults(func=_cmd_adapt)
     return p
 
 

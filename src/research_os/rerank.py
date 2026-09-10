@@ -115,7 +115,10 @@ def _bonuses(result: Result) -> dict[str, float]:
     return out
 
 
-def rerank(results: list[Result], mission: Mission) -> list[Result]:
+def rerank(results: list[Result], mission: Mission, overlay: dict | None = None) -> list[Result]:
+    overlay = overlay or {}
+    dom_delta = overlay.get("domain_weight_delta", {})
+    cls_delta = overlay.get("class_weight_delta", {})
     topic_words = _topic_words(mission)
     kept = [r for r in results if not _off_topic(r, topic_words)]
     dropped = len(results) - len(kept)
@@ -145,7 +148,9 @@ def rerank(results: list[Result], mission: Mission) -> list[Result]:
             seen_snippets.add(r.snippet_hash)
 
         r.base_score = _relevance(r, mission, pool)
-        r.class_weight = class_weight(r.source_class)
+        r.class_weight = round(
+            max(0.0, class_weight(r.source_class) + cls_delta.get(r.source_class, 0.0)), 4
+        )
         r.penalties = _penalties(r, seen, near_dup)
         r.bonuses = _bonuses(r)
 
@@ -162,8 +167,11 @@ def rerank(results: list[Result], mission: Mission) -> list[Result]:
         # novelty orders results *within* a class bucket (reranking-logic.md:
         # class, then relevance, then novelty). 0.0 -> 0.85x, 1.0 -> 1.15x.
         novelty_factor = 0.85 + 0.30 * r.novelty_score
+        # Stage 7: self-annealing per-domain weight delta (bounded, reversible).
+        domain_factor = max(0.1, 1.0 + dom_delta.get(r.domain, 0.0))
         r.final_score = round(
-            r.base_score * r.class_weight * penalty_mult * bonus_mult * novelty_factor, 6
+            r.base_score * r.class_weight * penalty_mult * bonus_mult
+            * novelty_factor * domain_factor, 6
         )
         notes = list(r.rerank_notes) + [f"class={r.source_class}({r.class_weight:.2f})"]
         if r.penalties:

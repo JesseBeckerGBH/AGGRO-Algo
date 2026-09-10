@@ -14,6 +14,7 @@ from pathlib import Path
 
 import yaml
 
+from . import adaptation
 from . import briefing as briefing_mod
 from . import canonical, classify, llm, novelty, planning, rerank, telemetry
 from .connectors import get_connectors
@@ -34,6 +35,7 @@ class RunOutput:
     new_vocab: list[str] = None  # type: ignore[assignment]
     failures: list[dict] = None  # type: ignore[assignment]
     drift: DriftReport = None  # type: ignore[assignment]
+    adaptation: dict = None  # type: ignore[assignment]
 
 
 def load_mission(path: str | Path) -> Mission:
@@ -54,16 +56,35 @@ def run_mission(
     brief_mode: str = "render",  # render | llm | auto
     llm_provider: str | None = None,
     llm_model: str | None = None,
+    adapt: bool = True,
 ) -> RunOutput:
     now = datetime.now(timezone.utc).isoformat(timespec="seconds")
     conns = get_connectors(connector)
 
-    # Stage 4: fold operator-promoted vocabulary back into the mission before
-    # planning (query-families.yaml: vocabulary_escalation).
+    # Stage 4 + 7: load promoted vocabulary and the active policy overlay
     with Memory(db_path) as _m:
         for term in _m.promoted_terms(mission.id):
             if term.lower() not in {s.lower() for s in mission.vocabulary_seed}:
                 mission.vocabulary_seed.append(term)
+        overlay = _m.active_overlay(mission.id)
+
+    # Stage 7: apply connector routing from the overlay (demote / skip)
+    demotions = overlay.get("connector_demotions", {})
+    if demotions:
+        rules = adaptation.adaptation_rules().get("levers", {}).get("connector_routing", {})
+        cap = int(rules.get("max_consecutive_demotions", 3))
+        active = [c for c in conns if demotions.get(c.name, 0) < cap]
+        conns = sorted(active or conns, key=lambda c: demotions.get(c.name, 0))
+
+    word_target = overlay.get("briefing_word_target") or 400
+    adapt_note = _overlay_note(overlay)
+
+    # Stage 7: an approved query_family_regeneration forces the two uncomfortable
+    # angles and rotates the vocabulary seed for the next run.
+    if overlay.get("query_regen"):
+        mission.novelty_requirement = "high"
+        if len(mission.vocabulary_seed) > 1:
+            mission.vocabulary_seed = mission.vocabulary_seed[1:] + mission.vocabulary_seed[:1]
 
     queries = planning.plan(mission)
 
@@ -104,7 +125,7 @@ def run_mission(
         mem.mark_novelty(mission.id, deduped)
         prior_shares, prior_top = mem.domain_shares(mission.id)  # state BEFORE this run
         novelty.score(deduped, prior_shares)
-        ordered = rerank.rerank(deduped, mission)
+        ordered = rerank.rerank(deduped, mission, overlay=overlay)
 
         mode = brief_mode
         if mode == "auto":
@@ -113,10 +134,12 @@ def run_mission(
             brief = briefing_mod.synthesize(
                 mission, ordered, top=top, retrieved=retrieved, generated_at=now,
                 provider=llm_provider, model=llm_model,
+                word_target=word_target, adaptation_note=adapt_note,
             )
         else:
             brief = briefing_mod.render(
-                mission, ordered, top=top, retrieved=retrieved, generated_at=now
+                mission, ordered, top=top, retrieved=retrieved, generated_at=now,
+                word_target=word_target, adaptation_note=adapt_note,
             )
 
         surfaced = ordered[:top]
@@ -158,9 +181,25 @@ def run_mission(
             mission.id, now, drift.metrics, [name for name, _ in drift.breaches]
         )
 
+        # Stage 7: run the closed loop (propose -> gate -> apply -> observe -> decide)
+        adapt_result = adaptation.run_cycle(mission, mem, now) if adapt else None
+
     return RunOutput(
         mission=mission, briefing=brief, reranked=ordered,
         retrieved=retrieved, per_connector=per_connector,
         novelty_yield=n_yield, domain_top_share=top_share, new_vocab=new_vocab,
-        failures=failures, drift=drift,
+        failures=failures, drift=drift, adaptation=adapt_result,
     )
+
+
+def _overlay_note(overlay: dict) -> str:
+    bits = []
+    for name, n in overlay.get("connector_demotions", {}).items():
+        bits.append(f"{name} demoted x{n}")
+    if overlay.get("briefing_word_target"):
+        bits.append(f"brief target {overlay['briefing_word_target']}w")
+    for d, delta in overlay.get("domain_weight_delta", {}).items():
+        bits.append(f"{d} {delta:+.2f}")
+    for c, delta in overlay.get("class_weight_delta", {}).items():
+        bits.append(f"{c} class {delta:+.2f}")
+    return "; ".join(bits) if bits else "none"

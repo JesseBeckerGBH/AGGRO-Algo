@@ -42,7 +42,8 @@ def _confidence(surfaced: list[Result]) -> tuple[str, str]:
 
 
 def render(mission: Mission, reranked: list[Result], *, top: int = 6,
-          retrieved: int = 0, generated_at: str = "") -> Briefing:
+          retrieved: int = 0, generated_at: str = "",
+          word_target: int = 400, adaptation_note: str = "none") -> Briefing:
     surfaced = reranked[:top]
     novel_domains = sorted({r.domain for r in surfaced if r.novel_domain})
     contra = [r for r in surfaced if _is_contradicting(r)]
@@ -119,7 +120,7 @@ def render(mission: Mission, reranked: list[Result], *, top: int = 6,
     # Footer
     lines.append(
         f"_retrieved {retrieved} · surfaced {len(surfaced)} · "
-        f"novel domains {len(novel_domains)} · adaptation applied: none_"
+        f"novel domains {len(novel_domains)} · adaptation applied: {adaptation_note}_"
     )
 
     body = "\n".join(lines)
@@ -157,8 +158,9 @@ mission and a reranked, source-classified result set. Obey every rule:
   stronger-class source for the same point.
 - Prefer one mechanism the reader can act on over five facts they cannot.
 - If two strong sources disagree, present the disagreement; do not resolve it.
-- 250-400 words of body. If nothing material was found, say so in two
-  sentences and stop -- do not manufacture significance.
+- About {word_target} words of body (hard ceiling {ceiling}). If nothing
+  material was found, say so in two sentences and stop -- do not manufacture
+  significance.
 - Flat and declarative. No enthusiasm, no "it is important to note".
 Do not write the footer line; it is appended mechanically."""
 
@@ -193,6 +195,8 @@ def synthesize(
     generated_at: str = "",
     provider: str | None = None,
     model: str | None = None,
+    word_target: int = 400,
+    adaptation_note: str = "none",
     _transport=None,
 ) -> Briefing:
     """LLM narrative over the reranked set, obeying prompts/briefing-agent.md.
@@ -222,13 +226,16 @@ def synthesize(
             f"for the 'What contradicts it' section)\n{_result_block(disconfirming)}\n"
         )
 
+    ceiling = int(word_target * 1.5)
+    system = (_SYSTEM.replace("{word_target}", str(word_target))
+                     .replace("{ceiling}", str(ceiling)))
     body = llm.synthesize(
-        _SYSTEM, user, provider=provider, model=model, _transport=_transport
+        system, user, provider=provider, model=model, _transport=_transport
     ).rstrip()
 
     footer = (
         f"\n\n_retrieved {retrieved} · surfaced {len(surfaced)} · "
-        f"novel domains {len(novel_domains)} · adaptation applied: none_"
+        f"novel domains {len(novel_domains)} · adaptation applied: {adaptation_note}_"
     )
     return Briefing(
         mission_id=mission.id,
