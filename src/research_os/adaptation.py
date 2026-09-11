@@ -54,10 +54,17 @@ def propose(mission: Mission, mem, *, window: int = 10) -> list[Proposal]:
     levers, _, _ = _rules()
     counts = _windowed_failure_counts(mem, mission.id, window)
     conn_fails = _windowed_connector_failures(mem, mission.id, window)
-    # don't restack a lever that already has a proposal waiting for the operator
+    # Don't restack a lever that already has an open instance. domain/class
+    # weight adjustments are the exception: they are meant to accrue in small
+    # bounded steps over time (gate() enforces cooldown + max_cumulative_change
+    # on those), so a second one is legitimate once the cooldown has passed.
+    # The other three levers are one-shot/flag-like with no cooldown of their
+    # own — without this they restack indefinitely once evidence exists.
+    _CUMULATIVE = {"domain_weight_adjustment", "class_weight_adjustment"}
     open_levers = {
         r["lever"] for r in mem.list_policy(mission.id)
-        if r["status"] == "pending_operator"
+        if r["status"] in ("pending_operator", "active")
+        and r["lever"] not in _CUMULATIVE
     }
     out: list[Proposal] = []
 

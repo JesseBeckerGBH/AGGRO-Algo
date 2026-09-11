@@ -52,6 +52,17 @@ def test_propose_and_apply_auto_connector_routing(tmp_path):
     assert "connector_routing" in log
 
 
+def test_propose_does_not_restack_an_already_active_flag_lever(tmp_path):
+    mem = _mem(tmp_path)
+    for i in range(2):
+        _fail(mem, "novelty_failure", "repeat_domain_dominance",
+              "arxiv.org is 5/8 of the surfaced set", f"2026-02-0{i+1}T00:00:00+00:00")
+    mem.add_policy_version("m1", "2026-02-02T00:00:00+00:00", "query_family_regeneration",
+                           "seed", {"force_angles": []}, status="active")
+    props = [p for p in adaptation.propose(MISSION, mem) if p.lever == "query_family_regeneration"]
+    assert props == []  # already active -> not proposed again
+
+
 def test_gate_blocks_on_cooldown(tmp_path):
     mem = _mem(tmp_path)
     now_iso = datetime.now(timezone.utc).isoformat(timespec="seconds")
