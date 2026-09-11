@@ -38,9 +38,14 @@ class Mission:
 
     def topical_terms(self) -> list[str]:
         """Subject words from the objective plus the vocabulary seeds. Used to
-        ground queries and to gate irrelevant results in rerank."""
+        ground queries and to gate irrelevant results in rerank. A bare year
+        (e.g. "2026") is excluded -- shared only because two unrelated things
+        both mention the current year is not evidence of topical relevance."""
         words = [w.strip(",.:;()").lower() for w in self.objective.split()]
-        subject = [w for w in words if len(w) > 2 and w not in self._GENERIC_WORDS]
+        subject = [
+            w for w in words
+            if len(w) > 2 and w not in self._GENERIC_WORDS and not w.isdigit()
+        ]
         seeds = [s.lower().strip() for s in self.vocabulary_seed if s.strip()]
         seen: set[str] = set()
         out: list[str] = []
@@ -52,7 +57,10 @@ class Mission:
 
     def subject(self) -> str:
         words = [w.strip(",.:;()").lower() for w in self.objective.split()]
-        keep = [w for w in words if len(w) > 2 and w not in self._GENERIC_WORDS]
+        keep = [
+            w for w in words
+            if len(w) > 2 and w not in self._GENERIC_WORDS and not w.isdigit()
+        ]
         return " ".join(keep[:3]) or (self.vocabulary_seed[0] if self.vocabulary_seed else self.id)
 
     @staticmethod

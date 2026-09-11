@@ -40,6 +40,21 @@ def test_low_trust_is_buried():
     assert ordered[-1].final_score < ordered[0].final_score
 
 
+def test_bare_year_does_not_count_as_topical_overlap():
+    mission = Mission(
+        id="t", objective="Track Miro's 2026 enterprise license repackaging",
+        success_condition="x", novelty_requirement="high",
+        vocabulary_seed=["miro enterprise pricing"],
+    )
+    # shares only the digits "2026" with the mission -- should be treated as
+    # off-topic, not kept alive by a coincidental year match
+    off_topic = _mk("World Cup 2026 discussion", "https://facebook.com/groups/x", 1)
+    off_topic.snippet = "World Cup 2026 news and discussion groups"
+    enrich([off_topic]); classify([off_topic])
+    ordered = rerank([off_topic], mission)
+    assert ordered == []  # dropped before ranking, not merely down-weighted
+
+
 def test_domain_repetition_penalty_hits_third_hit():
     rs = [
         _mk("a", "https://arxiv.org/abs/1", 1),

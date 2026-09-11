@@ -22,18 +22,23 @@ _FORCED_ANGLES = ("disconfirming", "adjacent_field")
 
 
 def _query_for(angle: str, subject: str, seed: str, year: str) -> str:
+    # Domain-agnostic on purpose: missions run over academic/predictive-modeling
+    # topics AND business/competitive-intelligence topics, and a template tuned
+    # for one reads as nonsense on the other (an earlier version's disconfirming
+    # query used "overfitting" / "fails to generalize", which pulled unrelated
+    # ML papers into a pricing-strategy mission's "what contradicts it").
     grounded = f"{subject} {seed}".strip()
     table = {
         "canonical": grounded,
         "technical": grounded,
-        "primary_source_hunt": f"{grounded} dataset OR paper OR preprint",
-        "mechanism": f"how {seed or subject} predicts {subject}".strip(),
-        "disconfirming": f"{subject} prediction limitations OR overfitting OR "
-                         f'"fails to generalize" OR unreliable',
-        "adjacent_field": f"{seed or subject} predictive modelling in other sports",
-        "practitioner_experience": f"{grounded} model in practice lessons learned",
-        "historical": f"{subject} predictive features prior work",
-        "quantitative": f"{grounded} benchmark OR accuracy OR effect size",
+        "primary_source_hunt": f"{grounded} official OR announcement OR documentation",
+        "mechanism": f"how {grounded} works" if grounded else f"{subject} explained",
+        "disconfirming": f"{grounded} criticism OR backlash OR complaints OR "
+                         f"controversy OR problems",
+        "adjacent_field": f"{seed or subject} comparable situations in other markets",
+        "practitioner_experience": f"{grounded} real world experience review",
+        "historical": f"{subject} history background timeline",
+        "quantitative": f"{grounded} data OR numbers OR statistics OR benchmark",
         "frontier": f"{grounded} {year}".strip(),
     }
     return " ".join(table.get(angle, grounded).split())
