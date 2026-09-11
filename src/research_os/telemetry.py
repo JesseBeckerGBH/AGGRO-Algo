@@ -126,3 +126,26 @@ def check_drift(mission_id: str, mem) -> DriftReport:
         breaches.append(("disconfirming_share", f"{ds:.0%} < floor {ds_floor:.0%}"))
 
     return DriftReport(mission_id, metrics, breaches)
+
+
+# adaptation-rules.yaml drift_detection.on_breach: "force query family
+# regeneration on affected missions" — so a drift breach must feed the same
+# evidence counters propose() reads, or the loop never reacts to a mission
+# that has simply gone stale (same connector, same queries, warm memory).
+_DRIFT_FAILURE_MAP = {
+    "novelty_yield": ("novelty_failure", "novelty_yield_below_floor"),
+    "domain_concentration": ("novelty_failure", "domain_concentration_high"),
+    "primary_share": ("coverage_failure", "primary_share_below_floor"),
+    "disconfirming_share": ("coverage_failure", "disconfirming_share_below_floor"),
+}
+
+
+def drift_to_failures(drift: DriftReport) -> list[dict]:
+    out = []
+    for name, msg in drift.breaches:
+        fclass, signal = _DRIFT_FAILURE_MAP[name]
+        out.append({
+            "failure_class": fclass, "signal": signal,
+            "severity": _severity(fclass), "detail": f"drift: {msg}",
+        })
+    return out

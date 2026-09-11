@@ -81,6 +81,18 @@ def test_drift_clean():
     assert rep.clean and rep.breaches == []
 
 
+def test_drift_breaches_become_failure_events():
+    from research_os.telemetry import DriftReport, drift_to_failures
+    rep = DriftReport("m", {}, breaches=[
+        ("novelty_yield", "0% < floor 20%"),
+        ("primary_share", "10% < floor 30%"),
+    ])
+    events = drift_to_failures(rep)
+    classes = {e["failure_class"] for e in events}
+    assert classes == {"novelty_failure", "coverage_failure"}
+    assert all("drift:" in e["detail"] for e in events)
+
+
 def test_drift_flags_each_threshold():
     rep = telemetry.check_drift("m", _StubMem(ny=0.05, conc=0.6, ps=0.1, ds=0.02))
     names = {n for n, _ in rep.breaches}

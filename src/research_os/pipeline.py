@@ -175,8 +175,12 @@ def run_mission(
             mission, surfaced, brief,
             connector_errors=connector_errors, retrieved=retrieved,
         )
-        mem.record_failures(mission.id, failures, now)
         drift = telemetry.check_drift(mission.id, mem)
+        # adaptation-rules.yaml on_breach: a drift breach must feed the same
+        # evidence propose() reads, or a mission that's simply gone stale
+        # (same connector, same queries, warm memory) never gets a remediation.
+        failures = failures + telemetry.drift_to_failures(drift)
+        mem.record_failures(mission.id, failures, now)
         mem.record_drift_check(
             mission.id, now, drift.metrics, [name for name, _ in drift.breaches]
         )
