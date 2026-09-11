@@ -121,7 +121,7 @@ def run_mission(
             if not any(r.domain == d or r.domain.endswith("." + d)
                        for d in mission.excluded_domains)
         ]
-        classify.classify(deduped)
+        classify.classify(deduped, mission)
         mem.mark_novelty(mission.id, deduped)
         prior_shares, prior_top = mem.domain_shares(mission.id)  # state BEFORE this run
         novelty.score(deduped, prior_shares)

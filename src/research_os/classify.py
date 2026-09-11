@@ -10,7 +10,7 @@ are stubbed to return None until there is fetched page content to run them on.
 from __future__ import annotations
 
 from .config import source_classes
-from .models import Result
+from .models import Mission, Result
 
 # Seeded from source-classes.yaml `example_domains` plus obvious members of each
 # class. Operator overrides in configs/source-classes.yaml:domain_allowlist win
@@ -74,7 +74,23 @@ def _registrable(domain: str) -> str:
     return ".".join(parts[-2:])
 
 
-def classify_one(result: Result) -> tuple[str, str]:
+def _is_first_party(reg: str, mission: Mission | None) -> bool:
+    """Is this domain's own company the subject of the mission? A vendor's own
+    site reporting its own pricing/announcement is first-party material
+    (source-classes.yaml: "first-party announcements and direct statements"),
+    even when it isn't in the static domain map. Guarded to root names of at
+    least 4 characters to avoid noise matches ("co", "io", ...).
+    """
+    if not mission:
+        return False
+    root = reg.split(".")[0].lower()
+    if len(root) < 4:
+        return False
+    terms = " ".join(mission.topical_terms())
+    return root in terms
+
+
+def classify_one(result: Result, mission: Mission | None = None) -> tuple[str, str]:
     cfg = source_classes()
     domain = result.domain
     reg = _registrable(domain)
@@ -94,6 +110,9 @@ def classify_one(result: Result) -> tuple[str, str]:
     if reg in _DOMAIN_MAP:
         return _DOMAIN_MAP[reg], "domain_map"
 
+    if _is_first_party(reg, mission):
+        return "primary", "first_party_domain"
+
     if domain.endswith(_PRIMARY_TLDS):
         return "primary", "domain_pattern"
     if domain.endswith(_SECONDARY_TLDS):
@@ -102,10 +121,10 @@ def classify_one(result: Result) -> tuple[str, str]:
     return _DEFAULT_CLASS, "default"
 
 
-def classify(results: list[Result]) -> list[Result]:
+def classify(results: list[Result], mission: Mission | None = None) -> list[Result]:
     valid = set(source_classes().get("classes", {}))
     for r in results:
-        cls, signal = classify_one(r)
+        cls, signal = classify_one(r, mission)
         if cls not in valid:
             cls, signal = _DEFAULT_CLASS, "default:unknown-class"
         r.source_class = cls

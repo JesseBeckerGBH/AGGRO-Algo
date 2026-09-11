@@ -12,6 +12,8 @@ is `synthesize()` below.
 
 from __future__ import annotations
 
+import re
+
 from . import llm
 from .models import Briefing, Mission, Result
 
@@ -152,7 +154,11 @@ mission and a reranked, source-classified result set. Obey every rule:
   ## Confidence    -- high | medium | low, and the specific gap.
   ## Next question -- the single strongest follow-up and which angle pursues it.
 - Every claim carries an inline source with its class label, e.g.
-  "(arxiv.org, primary)".
+  "(arxiv.org, primary)". Copy the class EXACTLY as given in the RESULTS
+  block for that domain -- never upgrade or downgrade it because the name
+  looks official or unofficial to you. If you believe a label is wrong,
+  say so in Confidence as a named gap; do not silently relabel it. The
+  class shown to the reader must always match the system's own record.
 - Lead with what changed or is newly known, never with background.
 - An aggregator or community item may only support a claim alongside a
   stronger-class source for the same point.
@@ -184,6 +190,26 @@ def _result_block(results: list[Result]) -> str:
             f"   snippet: {r.snippet.strip() or '(none)'}"
         )
     return "\n".join(lines)
+
+
+_CLASS_TAG = re.compile(r"\(([a-z0-9][\w.-]*\.[a-z]{2,})\s*,\s*([a-zA-Z_ ]+)\)")
+
+
+def _enforce_class_labels(body: str, known: dict[str, str]) -> str:
+    """Correct any '(domain, class)' tag the model wrote to the class this
+    system actually recorded for that domain. A prompt rule is a request; this
+    is the guarantee -- the reader-facing label must match the record even if
+    the model "corrected" it on its own (e.g. relabeling a vendor site as
+    primary when the classifier had filed it as aggregator)."""
+
+    def fix(m: re.Match) -> str:
+        domain, claimed = m.group(1), m.group(2).strip()
+        actual = known.get(domain)
+        if actual is None or claimed.replace(" ", "_") == actual:
+            return m.group(0)
+        return f"({domain}, {actual})"
+
+    return _CLASS_TAG.sub(fix, body)
 
 
 def synthesize(
@@ -232,6 +258,9 @@ def synthesize(
     body = llm.synthesize(
         system, user, provider=provider, model=model, _transport=_transport
     ).rstrip()
+    # Enforce, don't just request: the class label shown to the reader must
+    # match the system's own record, even if the model relabeled it.
+    body = _enforce_class_labels(body, {r.domain: r.source_class for r in reranked})
 
     footer = (
         f"\n\n_retrieved {retrieved} · surfaced {len(surfaced)} · "
