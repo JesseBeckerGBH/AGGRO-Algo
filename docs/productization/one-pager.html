@@ -1,0 +1,429 @@
+<title>Source-Class Briefing</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+
+  :root{
+    --paper:#EDEAE0;
+    --paper-raised:#F6F4EC;
+    --ink:#1B1F1C;
+    --ink-soft:#55554A;
+    --line:#C7C2AE;
+    --line-strong:#A9A38B;
+    --accent:#8A3B2B;
+    --accent-ink:#FBEEE7;
+    --verify:#33553A;
+    --verify-soft:#DDE6DA;
+    --chip-bg:#E2DECD;
+  }
+
+  *{box-sizing:border-box;}
+  html{color-scheme:light;}
+  body{
+    margin:0;
+    background:var(--paper);
+    color:var(--ink);
+    font-family:'Newsreader', Georgia, 'Times New Roman', serif;
+    font-size:17px;
+    line-height:1.6;
+    -webkit-font-smoothing:antialiased;
+  }
+  ::selection{background:var(--accent);color:var(--accent-ink);}
+
+  .sheet{
+    max-width:740px;
+    margin:0 auto;
+    padding:56px 28px 80px;
+  }
+
+  .eyebrow{
+    font-family:'IBM Plex Mono', ui-monospace, monospace;
+    font-size:12px;
+    letter-spacing:.11em;
+    text-transform:uppercase;
+    color:var(--ink-soft);
+  }
+
+  header.masthead{
+    border-bottom:2px solid var(--ink);
+    padding-bottom:22px;
+    margin-bottom:34px;
+  }
+  .masthead-row{
+    display:flex;
+    justify-content:space-between;
+    align-items:baseline;
+    gap:16px;
+    flex-wrap:wrap;
+  }
+  .masthead-row .eyebrow:last-child{text-align:right;}
+  .stamp{
+    display:inline-block;
+    margin-top:14px;
+    padding:4px 10px;
+    font-family:'IBM Plex Mono', monospace;
+    font-size:11px;
+    letter-spacing:.09em;
+    text-transform:uppercase;
+    color:var(--accent);
+    border:1.5px solid var(--accent);
+    border-radius:2px;
+    transform:rotate(-1deg);
+  }
+
+  h1{
+    font-family:'Archivo', ui-sans-serif, sans-serif;
+    font-weight:800;
+    font-size:clamp(30px,5vw,42px);
+    line-height:1.12;
+    letter-spacing:-0.015em;
+    text-wrap:balance;
+    margin:20px 0 14px;
+  }
+  .sub{
+    font-size:19px;
+    color:var(--ink-soft);
+    max-width:64ch;
+    margin:0 0 6px;
+  }
+
+  .section{
+    margin-top:52px;
+    padding-top:28px;
+    border-top:1px dashed var(--line-strong);
+  }
+  .section-head{
+    display:flex;
+    align-items:baseline;
+    gap:12px;
+    margin-bottom:16px;
+  }
+  .section-num{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:13px;
+    color:var(--accent);
+    font-weight:600;
+  }
+  .section-title{
+    font-family:'Archivo', sans-serif;
+    font-weight:700;
+    font-size:13px;
+    letter-spacing:.12em;
+    text-transform:uppercase;
+    color:var(--ink);
+  }
+  .section p{max-width:66ch;}
+  .section p + p{margin-top:14px;}
+
+  .tag{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:11.5px;
+    color:var(--ink-soft);
+    background:var(--chip-bg);
+    border-radius:3px;
+    padding:1px 6px;
+    white-space:nowrap;
+  }
+
+  /* source-class ladder */
+  .ladder{
+    margin:22px 0 8px;
+    display:flex;
+    flex-direction:column;
+    gap:9px;
+  }
+  .rung{
+    display:grid;
+    grid-template-columns:168px 1fr 52px;
+    align-items:center;
+    gap:14px;
+  }
+  .rung-label{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:12px;
+    letter-spacing:.03em;
+    text-transform:uppercase;
+    color:var(--ink);
+  }
+  .rung-track{
+    background:var(--paper-raised);
+    border:1px solid var(--line);
+    border-radius:2px;
+    height:14px;
+    overflow:hidden;
+  }
+  .rung-fill{display:block;height:100%;border-radius:1px;}
+  .rung-weight{
+    font-family:'IBM Plex Mono', monospace;
+    font-variant-numeric:tabular-nums;
+    font-size:13px;
+    text-align:right;
+    color:var(--ink-soft);
+  }
+  .rung-desc{
+    grid-column:1 / -1;
+    font-size:14.5px;
+    color:var(--ink-soft);
+    margin-top:-4px;
+    padding-left:2px;
+  }
+
+  blockquote{
+    margin:20px 0;
+    padding:14px 18px;
+    background:var(--paper-raised);
+    border-left:3px solid var(--ink);
+    font-style:italic;
+    font-size:16px;
+  }
+  blockquote cite{
+    display:block;
+    margin-top:8px;
+    font-family:'IBM Plex Mono', monospace;
+    font-style:normal;
+    font-size:11.5px;
+    color:var(--ink-soft);
+    letter-spacing:.03em;
+  }
+
+  .brief{
+    margin:22px 0 6px;
+    background:var(--paper-raised);
+    border:1px solid var(--line-strong);
+    border-radius:3px;
+    padding:22px 24px 20px;
+  }
+  .brief-meta{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:11px;
+    letter-spacing:.06em;
+    text-transform:uppercase;
+    color:var(--verify);
+    background:var(--verify-soft);
+    display:inline-block;
+    padding:3px 8px;
+    border-radius:2px;
+    margin-bottom:14px;
+  }
+  .brief h3{
+    font-family:'Archivo', sans-serif;
+    font-size:12px;
+    letter-spacing:.1em;
+    text-transform:uppercase;
+    color:var(--ink-soft);
+    margin:16px 0 6px;
+  }
+  .brief h3:first-of-type{margin-top:0;}
+  .brief p{font-size:15.5px;margin:0 0 4px;max-width:none;}
+  .brief .src{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:12px;
+    color:var(--verify);
+  }
+  .brief-footer{
+    margin-top:16px;
+    padding-top:12px;
+    border-top:1px dotted var(--line-strong);
+    font-family:'IBM Plex Mono', monospace;
+    font-size:11.5px;
+    color:var(--ink-soft);
+  }
+
+  ul.plain{margin:14px 0;padding:0;list-style:none;}
+  ul.plain li{
+    position:relative;
+    padding-left:20px;
+    margin-bottom:10px;
+    max-width:64ch;
+    font-size:16px;
+  }
+  ul.plain li::before{
+    content:"—";
+    position:absolute;left:0;top:0;
+    color:var(--accent);
+  }
+
+  .cta{
+    margin-top:24px;
+    padding:26px 26px 24px;
+    background:var(--ink);
+    color:var(--paper);
+    border-radius:4px;
+  }
+  .cta .section-title{color:var(--paper);}
+  .cta p{color:#D8D5C6;max-width:60ch;}
+  .cta-btn{
+    display:inline-block;
+    margin-top:16px;
+    background:var(--accent);
+    color:var(--accent-ink);
+    font-family:'Archivo', sans-serif;
+    font-weight:700;
+    font-size:15px;
+    text-decoration:none;
+    padding:12px 22px;
+    border-radius:3px;
+    letter-spacing:.01em;
+  }
+  .cta-btn:hover{filter:brightness(1.08);}
+  .cta-note{
+    margin-top:14px;
+    font-family:'IBM Plex Mono', monospace;
+    font-size:12px;
+    color:#B8B49F;
+  }
+
+  footer{
+    margin-top:60px;
+    padding-top:18px;
+    border-top:1px solid var(--line);
+    font-family:'IBM Plex Mono', monospace;
+    font-size:11.5px;
+    color:var(--ink-soft);
+    display:flex;
+    justify-content:space-between;
+    flex-wrap:wrap;
+    gap:8px;
+  }
+
+  a{color:var(--accent);}
+  :focus-visible{outline:2px solid var(--accent);outline-offset:2px;}
+
+  @media (max-width:520px){
+    .rung{grid-template-columns:1fr 40px;grid-template-areas:"label weight" "track track";row-gap:6px;}
+    .rung-label{grid-area:label;}
+    .rung-weight{grid-area:weight;}
+    .rung-track{grid-area:track;}
+  }
+</style>
+
+<div class="sheet">
+
+  <header class="masthead">
+    <div class="masthead-row">
+      <span class="eyebrow">Operator Briefing</span>
+      <span class="eyebrow">Ref RTOS-2026-0910</span>
+    </div>
+    <h1>Know what changed, why it matters, and where the evidence came from.</h1>
+    <p class="sub">A research engine for competitive-intelligence and product-marketing teams, built to rank every result by source credibility first — never by relevance, recency, or what performed well last time.</p>
+    <span class="stamp">Design-partner program · open now</span>
+  </header>
+
+  <section class="section">
+    <div class="section-head">
+      <span class="section-num">01</span>
+      <span class="section-title">Bottom line</span>
+    </div>
+    <p>This generates competitive-intelligence briefs that will not let a well-written, highly relevant result outrank a better-sourced one. Every claim ships with its source class attached. Every brief carries a mandatory section for the evidence that disagrees with it — and says so explicitly when none was found, instead of quietly leaving it out.</p>
+  </section>
+
+  <section class="section">
+    <div class="section-head">
+      <span class="section-num">02</span>
+      <span class="section-title">What is new</span>
+    </div>
+    <p>Compared to an aggregator with an AI summary bolted on: the ranking policy underneath is a config file you can read, not a black box. This is its actual source hierarchy — the same weights the engine runs on right now, before relevance, recency, or popularity are ever considered.</p>
+
+    <div class="ladder">
+      <div class="rung">
+        <span class="rung-label">Primary</span>
+        <span class="rung-track"><span class="rung-fill" style="width:100%;background:var(--verify);"></span></span>
+        <span class="rung-weight">1.00</span>
+      </div>
+      <div class="rung-desc">Filings, datasets, first-party statements — the thing itself, not a description of it.</div>
+
+      <div class="rung">
+        <span class="rung-label">High-trust secondary</span>
+        <span class="rung-track"><span class="rung-fill" style="width:85%;background:var(--verify);"></span></span>
+        <span class="rung-weight">0.85</span>
+      </div>
+      <div class="rung-desc">Outlets with editorial standards and a correction record.</div>
+
+      <div class="rung">
+        <span class="rung-label">Named expert</span>
+        <span class="rung-track"><span class="rung-fill" style="width:80%;background:var(--verify);"></span></span>
+        <span class="rung-weight">0.80</span>
+      </div>
+      <div class="rung-desc">Weighted per practitioner, not per platform — a strong analyst's post outranks a weak outlet's article.</div>
+
+      <div class="rung">
+        <span class="rung-label">Aggregator</span>
+        <span class="rung-track"><span class="rung-fill" style="width:45%;background:#8C8666;"></span></span>
+        <span class="rung-weight">0.45</span>
+      </div>
+      <div class="rung-desc">Useful for discovery, never allowed to stand as terminal evidence.</div>
+
+      <div class="rung">
+        <span class="rung-label">Community</span>
+        <span class="rung-track"><span class="rung-fill" style="width:30%;background:#8C8666;"></span></span>
+        <span class="rung-weight">0.30</span>
+      </div>
+      <div class="rung-desc">Exploratory signal — never top-ranked by default.</div>
+
+      <div class="rung">
+        <span class="rung-label">Low-trust</span>
+        <span class="rung-track"><span class="rung-fill" style="width:5%;background:var(--accent);"></span></span>
+        <span class="rung-weight">0.05</span>
+      </div>
+      <div class="rung-desc">Kept near zero rather than hard-blocked, so how much of the web is noise stays measurable.</div>
+    </div>
+
+    <blockquote>
+      Every retrieved result is scored by source class first, before relevance, recency, or popularity.
+      <cite>— the engine's governing rule, source-classes.yaml</cite>
+    </blockquote>
+  </section>
+
+  <section class="section">
+    <div class="section-head">
+      <span class="section-num">03</span>
+      <span class="section-title">What contradicts it</span>
+    </div>
+    <p>No customers yet. This is early, and it should be said plainly rather than buried — that's the same rule the engine applies to its own output, applied here to the pitch.</p>
+    <p>What exists: a self-annealing ranking engine that has already caught and corrected its own mistakes in live testing <span class="tag">internal test run · 2026-09</span> — bounded, logged, and reversible, not a one-way ratchet. And the unedited sample below, from a real run, not a mockup.</p>
+    <p>What doesn't exist yet: a subscription, a support team, or proof it fits your specific market. That's exactly what a design-partner brief is for.</p>
+
+    <div class="brief">
+      <span class="brief-meta">Unedited sample output · not competitive intelligence — proof the pipeline is real</span>
+      <h3>Bottom line</h3>
+      <p>Three underused predictive feature categories demonstrate measurable gains over standard baseline models.</p>
+      <h3>What is new</h3>
+      <p><strong>Enhanced Surface-Weighted Elo Differentials</strong> — dynamic, non-linear rating gaps replace the static logistic curve most models still use. <span class="src">(arxiv.org, primary)</span></p>
+      <h3>What contradicts it</h3>
+      <p>Complex tree-based models risk overfitting to noise unless regularized, and frequently show no statistically significant gain over a simple baseline. <span class="src">(arxiv.org, primary)</span></p>
+      <div class="brief-footer">retrieved 80 · surfaced 6 · novel domains 3 · adaptation applied: none</div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-head">
+      <span class="section-num">04</span>
+      <span class="section-title">Confidence</span>
+    </div>
+    <p>High, on the mechanism:</p>
+    <ul class="plain">
+      <li>Source-class-before-relevance is enforced in code, not stated as a policy.</li>
+      <li>Dwell time, click count, and session length may never be optimized as goals — an explicit, hard rule <span class="tag">adaptation-rules.yaml</span>, not a design preference.</li>
+      <li>Every change the engine makes to itself is bounded, logged, and reversible — up to 20 versions retained, on its own.</li>
+    </ul>
+    <p>Medium, on fit for your specific market. That's what the next few weeks of design partners settle — for both of us.</p>
+  </section>
+
+  <section class="section">
+    <div class="section-head">
+      <span class="section-num">05</span>
+      <span class="section-title">Next question</span>
+    </div>
+    <div class="cta">
+      <div class="section-title" style="margin-bottom:8px;">What's one competitor, pricing move, or shift your team already tracks?</div>
+      <p>Send it over and I'll run it through the engine above and reply with the real output — not a deck, not a call, the brief itself. Free, while the design-partner program is open.</p>
+      <a class="cta-btn" href="mailto:jessebecker2021@gmail.com?subject=Design%20partner%20brief%20request&body=Company%2Ftopic%20to%20brief%3A%0A%0AWhat%20I%27m%20trying%20to%20decide%3A">Send a topic — get a real brief back</a>
+      <div class="cta-note">No pitch deck attached to this. The brief is the pitch.</div>
+    </div>
+  </section>
+
+  <footer>
+    <span>JBAnalytics LLC</span>
+    <span>Built on a self-annealing, source-governed research engine</span>
+  </footer>
+
+</div>
